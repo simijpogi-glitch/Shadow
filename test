@@ -969,7 +969,7 @@ Tabs.AutoBandage:AddToggle("Gluttony_Enabled", {
 -----------------------------------------------------------------
 -- ======================= Exploit Bring Stuff Tab ======================
 -----------------------------------------------------------------
--- Bring Items Script with Multi-Select Fluent UI for teleporting food items
+-- Bring Items Script with Multi-Select Fluent UI and adjustable bring range
 
 -- ===================== CONFIGURABLE ITEMS LIST =====================
 local teleportableItems = {
@@ -985,8 +985,24 @@ if not BringStuffTab then
 end
 
 local selectedTeleportItems = {}
+local bringRange = 100
 
 BringStuffTab:AddSection("Teleport Food Items (Fluent Multi-Select)")
+
+BringStuffTab:AddSlider("BringRangeSlider", {
+    Title = "Bring Range",
+    Description = "Max distance to bring items",
+    Default = 100,
+    Min = 50,
+    Max = 300,
+    Rounding = 0,
+    Callback = function(val)
+        bringRange = val
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({Title="Bring Range", Content="Set bring range to "..val, Duration=2})
+        end
+    end
+})
 
 BringStuffTab:AddDropdown("TeleportItemsDropdown", {
     Title = "Items To Teleport",
@@ -1037,6 +1053,12 @@ local function getItemPart(obj)
     return obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
 end
 
+-- Checks if item is within bring range
+local function isWithinRange(obj, root, range)
+    local part = getItemPart(obj)
+    return part and (part.Position - root.Position).Magnitude <= range
+end
+
 -- Fires the pickup remote event to unlock the item for teleport
 local function unlockItem(item)
     local pickupRemote = game:GetService("ReplicatedStorage"):FindFirstChild("RemoteEvents") and
@@ -1050,7 +1072,7 @@ end
 
 BringStuffTab:AddButton({
     Title = "Teleport Selected Items",
-    Description = "Teleport all selected items to you (uses game pickup logic)",
+    Description = "Teleport all selected items to you (uses game pickup logic and range)",
     Callback = function()
         local root = getRoot()
         if not root then
@@ -1078,7 +1100,7 @@ BringStuffTab:AddButton({
 
         for _, wanted in ipairs(selectedTeleportItems) do
             for _, obj in ipairs(itemsFolder:GetChildren()) do
-                if obj.Name == wanted then
+                if obj.Name == wanted and isWithinRange(obj, root, bringRange) then
                     -- Step 1: Try to unlock (pickup) via remote
                     local unlocked = unlockItem(obj)
                     task.wait(0.25) -- Wait for the server to process pickup
@@ -1098,7 +1120,7 @@ BringStuffTab:AddButton({
         if Fluent and Fluent.Notify then
             Fluent:Notify({
                 Title = "Teleport Items",
-                Content = string.format("Teleported %d item(s), skipped %d (locked or failed)", count, failed),
+                Content = string.format("Teleported %d item(s), skipped %d (locked, out of range, or failed)", count, failed),
                 Duration = 4
             })
         end
