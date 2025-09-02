@@ -1,0 +1,2332 @@
+-- ======================= ShadowCore Key System =======================
+-- CONFIG
+local lootlabsLink = "https://loot-link.com/s?0zpUxvqA"        -- Your monetized link
+local correctKey   = "SHADOWCORE3256"                          -- Main key
+
+-- Services
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
+
+-- GUI Setup
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.Name = "ShadowCore_KeySystem"
+ScreenGui.Parent = CoreGui
+
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 420, 0, 260)
+Frame.Position = UDim2.new(0.5, -210, 1, 0)
+Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+Frame.BorderSizePixel = 0
+Frame.BackgroundTransparency = 0.1
+Frame.Parent = ScreenGui
+Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 14)
+
+-- Glow
+local UIStroke = Instance.new("UIStroke", Frame)
+UIStroke.Thickness = 2
+UIStroke.Color = Color3.fromRGB(90, 180, 255)
+UIStroke.Transparency = 0.2
+
+-- Title
+local Title = Instance.new("TextLabel")
+Title.BackgroundTransparency = 1
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Position = UDim2.new(0, 0, 0, 6)
+Title.Text = "🔒 ShadowCore Access"
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 22
+Title.TextColor3 = Color3.fromRGB(90,180,255)
+Title.Parent = Frame
+
+-- Info
+local Info = Instance.new("TextLabel")
+Info.BackgroundTransparency = 1
+Info.Size = UDim2.new(1, -20, 0, 44)
+Info.Position = UDim2.new(0, 10, 0, 46)
+Info.TextWrapped = true
+Info.Text = "Get your key from LootLabs:"
+Info.Font = Enum.Font.Gotham
+Info.TextSize = 15
+Info.TextColor3 = Color3.fromRGB(220,220,220)
+Info.Parent = Frame
+
+-- Copy Link Button
+local CopyBtn = Instance.new("TextButton")
+CopyBtn.Size = UDim2.new(0, 160, 0, 34)
+CopyBtn.Position = UDim2.new(0.5, -80, 0, 90)
+CopyBtn.Text = "📋 Copy Link"
+CopyBtn.Font = Enum.Font.GothamBold
+CopyBtn.TextSize = 15
+CopyBtn.TextColor3 = Color3.fromRGB(255,255,255)
+CopyBtn.BackgroundColor3 = Color3.fromRGB(80, 120, 255)
+Instance.new("UICorner", CopyBtn).CornerRadius = UDim.new(0, 10)
+CopyBtn.Parent = Frame
+
+-- Key Box
+local KeyBox = Instance.new("TextBox")
+KeyBox.Size = UDim2.new(1, -40, 0, 36)
+KeyBox.Position = UDim2.new(0, 20, 0, 140)
+KeyBox.PlaceholderText = "Enter ShadowCore Key..."
+KeyBox.Text = ""
+KeyBox.Font = Enum.Font.Gotham
+KeyBox.TextSize = 16
+KeyBox.TextColor3 = Color3.fromRGB(255,255,255)
+KeyBox.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+Instance.new("UICorner", KeyBox).CornerRadius = UDim.new(0, 10)
+KeyBox.Parent = Frame
+
+-- Verify Button
+local VerifyBtn = Instance.new("TextButton")
+VerifyBtn.Size = UDim2.new(0, 160, 0, 40)
+VerifyBtn.Position = UDim2.new(0.5, -80, 0, 190)
+VerifyBtn.Text = "🔑 Verify Key"
+VerifyBtn.Font = Enum.Font.GothamBold
+VerifyBtn.TextSize = 16
+VerifyBtn.TextColor3 = Color3.fromRGB(255,255,255)
+VerifyBtn.BackgroundColor3 = Color3.fromRGB(60, 140, 255)
+Instance.new("UICorner", VerifyBtn).CornerRadius = UDim.new(0, 10)
+VerifyBtn.Parent = Frame
+
+-- Footer
+local Footer = Instance.new("TextLabel")
+Footer.BackgroundTransparency = 1
+Footer.Size = UDim2.new(1, -10, 0, 20)
+Footer.Position = UDim2.new(0, 5, 1, -22)
+Footer.Text = "Powered by ShadowCore"
+Footer.Font = Enum.Font.Gotham
+Footer.TextSize = 13
+Footer.TextColor3 = Color3.fromRGB(140,140,140)
+Footer.Parent = Frame
+
+-- Animate in
+TweenService:Create(Frame, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+    Position = UDim2.new(0.5, -210, 0.5, -130)
+}):Play()
+
+-- Copy link
+CopyBtn.MouseButton1Click:Connect(function()
+    setclipboard(lootlabsLink)
+    CopyBtn.Text = "✅ Copied!"
+    CopyBtn.BackgroundColor3 = Color3.fromRGB(40, 170, 110)
+    task.wait(1.2)
+    CopyBtn.Text = "📋 Copy Link"
+    CopyBtn.BackgroundColor3 = Color3.fromRGB(80, 120, 255)
+end)
+
+-- ======================= MAIN SCRIPT =======================
+local function loadMainScript()
+    -- Load Fluent UI libraries
+    local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/discoart/FluentPlus/refs/heads/main/Beta.lua"))()
+    local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+    local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+
+    -- Init Fluent Window
+    local Window = Fluent:CreateWindow({
+        Title = "ShadowCore | by Sin",
+        SubTitle = "99 Nights Script (Free)",
+        TabWidth = 160,
+        Size = UDim2.fromOffset(460, 300),
+        Acrylic = true,
+        Theme = "Rose"
+    })
+
+local Tabs = {
+    Main        = Window:AddTab({ Title = "Main", Icon = "home" }),
+    Automation  = Window:AddTab({ Title = "Automation", Icon = "cog" }),
+    Fun         = Window:AddTab({ Title = "Fun", Icon = "smile" }),
+    AutoBandage = Window:AddTab({ Title = "Auto Bandage", Icon = "heart" }),
+    BringStuff  = Window:AddTab({ Title = "Bring Stuff", Icon = "hand" }),
+    LocalPlayer = Window:AddTab({ Title = "Local Player", Icon = "user" }),
+    Teleport    = Window:AddTab({ Title = "Teleport", Icon = "arrow-up-right" }),
+    Visuals     = Window:AddTab({ Title = "Visuals", Icon = "eye" }),
+}
+
+    -----------------------------------------------------------------
+    -- ======================= Features (Example) ===================
+    -----------------------------------------------------------------
+-----------------------------------------------------------------
+-- ======================= Main Tab ============================
+-----------------------------------------------------------------
+do
+    -- Credits
+    Tabs.Main:AddParagraph({
+        Title = "Credits",
+        Content = "GUI made by Sin\nRoblox: MIJ_LIM2021 Sin\nDiscord: https://discord.gg/vBEFRWTP"
+    })
+
+    -- Quick Actions
+    Tabs.Main:AddSection("Quick Actions")
+    Tabs.Main:AddButton({
+        Title = "Rejoin Server",
+        Description = "Leave and rejoin this server instantly.",
+        Callback = function()
+            game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, game.Players.LocalPlayer)
+        end
+    })
+    Tabs.Main:AddButton({
+        Title = "Close GUI",
+        Description = "Closes the ShadowCore GUI.",
+        Callback = function()
+            if Window and Window.Hide then Window:Hide() end
+        end
+    })
+
+-- Quick Settings
+Tabs.Main:AddSection("Quick Settings")
+
+Tabs.Main:AddToggle("ThemeToggle", {
+    Title = "Midnight Theme",
+    Default = true,
+    Callback = function(state)
+        if Fluent and Fluent.SetTheme then
+            -- Use "Midnight" for the dark theme, "Light" for the light theme.
+            local themeName = state and "Midnight" or "Light"
+            Fluent:SetTheme(themeName)
+            Fluent:Notify({
+                Title = "Theme Changed",
+                Content = "Theme set to " .. themeName,
+                Duration = 3
+            })
+        end
+    end
+})
+
+
+    -- Social Links
+    Tabs.Main:AddSection("Socials")
+    Tabs.Main:AddButton({
+        Title = "Facebook",
+        Description = "Go to my Facebook If you encountered a bug",
+        Callback = function()
+            setclipboard("https://www.facebook.com/mij.barbarin.5") -- Change to your channel!
+            Fluent:Notify({Title = "Copied", Content = "Facebook link copied!", Duration = 3})
+        end
+    })
+    Tabs.Main:AddButton({
+        Title = "Facebook",
+        Description = "TRUSTED SELLER Fb Account",
+        Callback = function()
+            setclipboard("https://www.facebook.com/clydegarcia11#") -- Change to your profile!
+            Fluent:Notify({Title = "Copied", Content = "Facebook link copied!", Duration = 3})
+        end
+    })
+
+    -- Info / Version
+    Tabs.Main:AddSection("ShadowCore | by Sin – Script Usage Info")
+    Tabs.Main:AddParagraph({
+        Title = "1.1.0",
+        Content = "ShadowCore is a powerful Script Used to enchance your performance" .. (Fluent.Version or "?")
+    })
+    Tabs.Main:AddParagraph({
+        Title = "Last Loaded",
+        Content = "Loaded at: " .. os.date("%Y-%m-%d %H:%M:%S")
+    })
+
+    -- FAQ / Help
+    Tabs.Main:AddSection("Help / FAQ")
+    Tabs.Main:AddParagraph({
+        Title = "How to use?",
+        Content = "This script is only working in 99 nights in the Forest."
+    })
+    Tabs.Main:AddParagraph({
+        Title = "Bring Stuff Not Working?",
+        Content = "The Bring Stuff is not working. I'm still working on it."
+    })
+end
+
+-----------------------------------------------------------------
+-- ======================= Automation Tab (No Cooldown Kill Aura) ======================
+-----------------------------------------------------------------
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
+local StarterGui = game:GetService("StarterGui")
+local LocalPlayer = Players.LocalPlayer
+
+---------------------------- Kill Aura --------------------------
+local KillAuraEnabled = false
+local attackRange = 300
+local useWhitelist = true
+local attackAllAtOnce = false
+local weaponPriority = {"Old Axe","Good Axe","Strong Axe","Spear","MorningStar","Laser Sword","Ice Sword","Katana"}
+local allTargets = {
+    "Bunny","Cultist","Wolf","Alpha Wolf","Bear","Polar Bear","Alien","Alien Elite",
+    "Arctic Fox","Black Robe Cultist","Red Robe Cultist","Crossbow Cultist",
+    "Green Frog","Blue Frog","Purple Frog","Red Frog King","Mammoth"
+}
+local targetWhitelist = {}
+for _, n in ipairs(allTargets) do targetWhitelist[n] = true end
+
+local function notify(title, text, duration)
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {Title=title, Text=text, Duration=duration or 3})
+    end)
+end
+
+local function getHRP()
+    local char = LocalPlayer.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        return char.HumanoidRootPart
+    end
+    return nil
+end
+
+local function findBestWeapon()
+    local inv = LocalPlayer:FindFirstChild("Inventory")
+    if not inv then return nil end
+    for _, w in ipairs(weaponPriority) do
+        local f = inv:FindFirstChild(w)
+        if f then return f end
+    end
+    return nil
+end
+
+local function isTargetValid(target, hrp)
+    if not target or not target.PrimaryPart then return false end
+    if useWhitelist and not targetWhitelist[target.Name] then return false end
+    local dist = (target.PrimaryPart.Position - hrp.Position).Magnitude
+    return dist <= attackRange
+end
+
+Tabs.Automation:AddSection("Kill Aura")
+Tabs.Automation:AddSlider("KA_Range", {
+    Title = "Attack Range",
+    Description = "Distance to attack mobs",
+    Default = attackRange,
+    Min = 50, Max = 500, Rounding = 0,
+    Callback = function(v) attackRange = v end
+})
+Tabs.Automation:AddToggle("KA_Whitelist", {
+    Title = "Use Target Whitelist",
+    Default = useWhitelist,
+    Callback = function(v) useWhitelist = v end
+})
+Tabs.Automation:AddToggle("KA_AllAtOnce", {
+    Title = "Attack All Targets At Once",
+    Default = attackAllAtOnce,
+    Callback = function(v) attackAllAtOnce = v end
+})
+Tabs.Automation:AddDropdown("KA_WeaponPriority", {
+    Title = "Weapon Priority",
+    Values = weaponPriority,
+    Default = weaponPriority[1],
+    Multi = false,
+    Callback = function(val)
+        notify("Kill Aura", "Priority head set to: "..tostring(val), 3)
+    end
+})
+Tabs.Automation:AddToggle("KA_Enabled", {
+    Title = "Kill Aura",
+    Default = false,
+    Callback = function(enabled)
+        KillAuraEnabled = enabled
+        if enabled then
+            notify("Kill Aura", "Enabled (No Cooldown)", 3)
+            local RemoteToolDamage = ReplicatedStorage:FindFirstChild("RemoteEvents") and ReplicatedStorage.RemoteEvents:FindFirstChild("ToolDamageObject")
+            task.spawn(function()
+                while KillAuraEnabled do
+                    local hrp = getHRP()
+                    if not hrp then task.wait(0.1) continue end
+                    local weapon = findBestWeapon()
+                    if not weapon or not RemoteToolDamage then task.wait(0.2) continue end
+                    local ownerId = weapon:GetAttribute("Owner") or ""
+                    local charactersFolder = Workspace:FindFirstChild("Characters")
+                    if not charactersFolder then task.wait(0.1) continue end
+
+                    if attackAllAtOnce then
+                        local hits = 0
+                        for _, tgt in ipairs(charactersFolder:GetChildren()) do
+                            if isTargetValid(tgt, hrp) then
+                                local args = {tgt, weapon, "3_"..tostring(ownerId), tgt.PrimaryPart.CFrame}
+                                pcall(function() RemoteToolDamage:InvokeServer(unpack(args)) end)
+                                hits += 1
+                            end
+                        end
+                        if hits > 0 then
+                            notify("Kill Aura", ("Attacked %d targets."):format(hits), 2)
+                        end
+                        -- No cooldown, instantly attack again
+                    else
+                        for _, tgt in ipairs(charactersFolder:GetChildren()) do
+                            if isTargetValid(tgt, hrp) then
+                                local args = {tgt, weapon, "3_"..tostring(ownerId), tgt.PrimaryPart.CFrame}
+                                pcall(function() RemoteToolDamage:InvokeServer(unpack(args)) end)
+                            end
+                        end
+                        -- No cooldown, instantly attack again
+                    end
+                    task.wait() -- yield to avoid freezing
+                end
+            end)
+        else
+            notify("Kill Aura", "Disabled", 3)
+        end
+    end
+})
+-- Fluent Tabs.Automation required
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- CONFIG
+local BRING_RADIUS = 300
+local TARGET_NAME = "Small Tree"
+local LOG_MODEL_NAME = "Log"
+
+-- Utility: Find real Small Tree models (not clones) in Foliage
+local function getAllRealSmallTrees()
+    local foliage = Workspace:FindFirstChild("Map") and Workspace.Map:FindFirstChild("Foliage")
+    if not foliage then return {} end
+    local trees = {}
+    for _, obj in ipairs(foliage:GetChildren()) do
+        if obj.Name == TARGET_NAME and obj:IsA("Model") and obj.PrimaryPart then
+            table.insert(trees, obj)
+        end
+    end
+    return trees
+end
+
+-- Utility: Find a player by name (case-insensitive, partial ok)
+local function getPlayerByName(name)
+    name = name:lower()
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr.Name:lower():find(name, 1, true) == 1 then
+            return plr
+        end
+    end
+    return nil
+end
+
+-- Utility: Find a Log model template for drop
+local function getLogTemplate()
+    local log
+    log = ReplicatedStorage:FindFirstChild(LOG_MODEL_NAME)
+    if log and log:IsA("Model") then return log end
+    if ReplicatedStorage:FindFirstChild("Assets") then
+        local asset = ReplicatedStorage.Assets:FindFirstChild(LOG_MODEL_NAME)
+        if asset and asset:IsA("Model") then return asset end
+    end
+    if Workspace:FindFirstChild(LOG_MODEL_NAME) and Workspace[LOG_MODEL_NAME]:IsA("Model") then
+        return Workspace[LOG_MODEL_NAME]
+    end
+    return nil
+end
+
+-- Drop Log at position
+local function spawnLogAt(pos)
+    local logTemplate = getLogTemplate()
+    if not logTemplate then
+        warn("No Log template found for dropping logs!")
+        return
+    end
+    local dropParent = Workspace:FindFirstChild("Items") or Workspace
+    local log = logTemplate:Clone()
+    local main = log.PrimaryPart or log:FindFirstChildWhichIsA("BasePart")
+    if main then
+        main.CFrame = CFrame.new(pos)
+        main.Anchored = false
+    end
+    log.Parent = dropParent
+end
+
+-- "Bring" a real Small Tree model to a target player (moves the actual model, not a clone)
+local function bringSmallTreesToPlayer(targetPlayer)
+    if not targetPlayer then return end
+    local targetRoot = targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not targetRoot then return end
+    local trees = getAllRealSmallTrees()
+    local count = 0
+    for _, tree in ipairs(trees) do
+        -- Only bring trees within radius of you
+        local yourRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if yourRoot and (tree.PrimaryPart.Position - yourRoot.Position).Magnitude <= BRING_RADIUS then
+            -- Drop log when tree is destroyed/moved (hook once)
+            if not tree:FindFirstChild("LogDropHooked") then
+                local hooked = Instance.new("BoolValue")
+                hooked.Name = "LogDropHooked"
+                hooked.Parent = tree
+                tree.AncestryChanged:Connect(function(obj, parent)
+                    if not parent then
+                        local lastPos = obj.PrimaryPart and obj.PrimaryPart.Position
+                        if lastPos then spawnLogAt(lastPos) end
+                    end
+                end)
+            end
+            -- Move the real model
+            tree:SetPrimaryPartCFrame(targetRoot.CFrame + Vector3.new(math.random(-6,6), 2, math.random(-6,6)))
+            count = count + 1
+        end
+    end
+    if Fluent and Tabs and Tabs.Automation then
+        Fluent:Notify({
+            Title = "Bring Tree",
+            Content = "Brought "..count.." real Small Tree(s) to "..targetPlayer.Name..".",
+            Duration = 4
+        })
+    end
+end
+
+-- Show health GUI for all real Small Trees (shared for all players)
+local function createOrUpdateTreeGui(tree)
+    if not tree.PrimaryPart then return end
+    local gui = tree:FindFirstChild("AuraTreeBar")
+    if not gui then
+        gui = Instance.new("BillboardGui")
+        gui.Name = "AuraTreeBar"
+        gui.Adornee = tree.PrimaryPart
+        gui.Size = UDim2.new(4, 0, 1, 0)
+        gui.StudsOffset = Vector3.new(0, 5, 0)
+        gui.AlwaysOnTop = true
+
+        local bg = Instance.new("Frame")
+        bg.Name = "BG"
+        bg.Parent = gui
+        bg.BackgroundColor3 = Color3.fromRGB(40,40,40)
+        bg.BorderSizePixel = 0
+        bg.Size = UDim2.new(1,0,0.33,0)
+        bg.Position = UDim2.new(0,0,0.33,0)
+
+        local hpBar = Instance.new("Frame")
+        hpBar.Name = "Fill"
+        hpBar.Parent = bg
+        hpBar.BackgroundColor3 = Color3.fromRGB(220, 205, 40)
+        hpBar.BorderSizePixel = 0
+        hpBar.Size = UDim2.new(1,0,1,0)
+
+        local label = Instance.new("TextLabel")
+        label.Name = "Label"
+        label.Parent = gui
+        label.Text = tree.Name
+        label.BackgroundTransparency = 1
+        label.Size = UDim2.new(1,0,0.33,0)
+        label.Position = UDim2.new(0,0,0,0)
+        label.TextColor3 = Color3.new(1,1,1)
+        label.TextStrokeTransparency = 0.6
+        label.Font = Enum.Font.SourceSansBold
+        label.TextScaled = true
+
+        gui.Parent = tree
+    end
+
+    -- Use server health if available
+    local maxHealth = tree:GetAttribute("MaxHealth") or 100
+    local health = tree:GetAttribute("Health") or maxHealth
+    local fill = gui:FindFirstChild("BG") and gui.BG:FindFirstChild("Fill")
+    if fill then
+        fill.Size = UDim2.new(math.clamp(health/maxHealth,0,1),0,1,0)
+    end
+
+    -- Listen for server updates, one connection per tree only!
+    if not tree:FindFirstChild("AuraHealthConnected") then
+        local marker = Instance.new("BoolValue")
+        marker.Name = "AuraHealthConnected"
+        marker.Parent = tree
+        tree:GetAttributeChangedSignal("Health"):Connect(function()
+            local h = tree:GetAttribute("Health") or maxHealth
+            if fill then fill.Size = UDim2.new(math.clamp(h/maxHealth,0,1),0,1,0) end
+        end)
+    end
+end
+
+local function guiAllSmallTrees()
+    for _, tree in ipairs(getAllRealSmallTrees()) do
+        createOrUpdateTreeGui(tree)
+    end
+end
+
+-- Listen for new trees for GUI
+local foliage = Workspace:FindFirstChild("Map") and Workspace.Map:FindFirstChild("Foliage")
+if foliage then
+    foliage.ChildAdded:Connect(function(obj)
+        if obj.Name == TARGET_NAME then
+            obj:GetPropertyChangedSignal("PrimaryPart"):Wait()
+            createOrUpdateTreeGui(obj)
+        end
+    end)
+end
+
+-- ========== GUI Integration for Fluent ==========
+if Tabs and Tabs.Automation then
+    Tabs.Automation:AddInput("BringTreeTargetInput", {
+        Title = "Target Player",
+        Default = "",
+        Placeholder = "full player name",
+        Callback = function(val)
+            _G.TargetBringPlayer = val
+        end
+    })
+
+    Tabs.Automation:AddButton({
+        Title = "Bring All Small Trees to Player",
+        Description = "Moves all real Small Trees to the specified player. Trees will drop Logs when destroyed.",
+        Callback = function()
+            local targetName = (_G.TargetBringPlayer or ""):gsub("^%s*(.-)%s*$", "%1")
+            if targetName == "" then
+                Fluent:Notify({Title="Bring Tree",Content="Enter player name in input above!",Duration=3})
+                return
+            end
+            local targetPlr = getPlayerByName(targetName)
+            if not targetPlr then
+                Fluent:Notify({Title="Bring Tree",Content="Player not found: "..targetName,Duration=3})
+                return
+            end
+            bringSmallTreesToPlayer(targetPlr)
+        end
+    })
+
+    Tabs.Automation:AddButton({
+        Title = "Show Health GUI for All Small Trees",
+        Description = "Creates/updates a health bar on every Small Tree.",
+        Callback = guiAllSmallTrees
+    })
+end
+
+
+
+
+------------------------ Bring Log Feature -----------------------
+Tabs.Automation:AddButton({
+    Title = "Auto Log",
+    Description = "Brings all Log models to your position",
+    Callback = function()
+        local player = game.Players.LocalPlayer
+        local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+        if not root then return end
+        local count = 0
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("Model") and obj.Name == "Log" then
+                obj.CFrame = root.CFrame + Vector3.new(0,5,0)
+                count = count + 1
+            end
+        end
+        Fluent:Notify({
+            Title = "Auto Log",
+            Content = "Brought " .. count .. " log(s) to your location!",
+            Duration = 4
+        })
+    end
+})
+
+-----------------------------------------------------------------
+-- ======================= Fun Tab =============================
+-----------------------------------------------------------------
+do
+    local Players = game:GetService("Players")
+    local RunService = game:GetService("RunService")
+    local StarterGui = game:GetService("StarterGui")
+    local Lighting = game:GetService("Lighting")
+    local LocalPlayer = Players.LocalPlayer
+
+    local function getRoot()
+        local char = LocalPlayer.Character
+        if char then return char:FindFirstChild("HumanoidRootPart") end
+        return nil
+    end
+
+    -- Spin Player
+    Tabs.Fun:AddButton({
+        Title = "Spin Player",
+        Description = "Spin your character like a Beyblade!",
+        Callback = function()
+            local root = getRoot()
+            if not root then return end
+            for i = 1, 50 do
+                task.wait()
+                root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(30), 0)
+            end
+        end
+    })
+
+    -- Launch Into Sky
+    Tabs.Fun:AddButton({
+        Title = "Launch Into Sky",
+        Description = "Send yourself flying up!",
+        Callback = function()
+            local root = getRoot()
+            if root then root.Velocity = Vector3.new(0, 200, 0) end
+        end
+    })
+
+    -- Fake Kill (Troll)
+    Tabs.Fun:AddButton({
+        Title = "Fake Kill (Troll)",
+        Description = "Pretend to die then auto-respawn",
+        Callback = function()
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("Humanoid") then
+                char.Humanoid.Health = 0
+                task.delay(1, function()
+                    LocalPlayer:LoadCharacter()
+                end)
+            end
+        end
+    })
+
+    -- Earthquake View (toggle)
+    local earthquakeEnabled = false
+    Tabs.Fun:AddToggle("EarthquakeToggle", {
+        Title = "Earthquake View",
+        Description = "Shake your camera like an earthquake",
+        Default = false,
+        Callback = function(state) earthquakeEnabled = state end
+    })
+    RunService.RenderStepped:Connect(function()
+        if earthquakeEnabled and workspace.CurrentCamera then
+            local cam = workspace.CurrentCamera
+            cam.CFrame = cam.CFrame * CFrame.Angles(
+                math.rad(math.random(-2, 2)),
+                math.rad(math.random(-2, 2)),
+                0
+            )
+        end
+    end)
+
+    -- Random Teleport
+    Tabs.Fun:AddButton({
+        Title = "Random Teleport",
+        Description = "Teleport to a random spot in the map",
+        Callback = function()
+            local root = getRoot()
+            if root then
+                local randPos = Vector3.new(math.random(-500, 500), 10, math.random(-500, 500))
+                root.CFrame = CFrame.new(randPos)
+            end
+        end
+    })
+
+    -- Flip Over
+    Tabs.Fun:AddButton({
+        Title = "Flip Over",
+        Description = "Turns your character upside down",
+        Callback = function()
+            local root = getRoot()
+            if root then
+                root.CFrame = root.CFrame * CFrame.Angles(math.rad(180), 0, 0)
+            end
+        end
+    })
+
+    -- Backflip (single)
+    Tabs.Fun:AddButton({
+        Title = "Backflip",
+        Description = "Do a backflip animation",
+        Callback = function()
+            local root = getRoot()
+            if not root then return end
+            for i = 1, 36 do
+                task.wait(0.02)
+                root.CFrame = root.CFrame * CFrame.Angles(math.rad(-10), 0, 0)
+            end
+        end
+    })
+
+    -- Backflip Loop (toggle)
+    local backflipLoop = false
+    Tabs.Fun:AddToggle("BackflipLoop", {
+        Title = "Backflip Loop",
+        Description = "Keep doing backflips until toggled off",
+        Default = false,
+        Callback = function(state)
+            backflipLoop = state
+            task.spawn(function()
+                while backflipLoop do
+                    local root = getRoot()
+                    if not root then break end
+                    for i = 1, 36 do
+                        if not backflipLoop then break end
+                        task.wait(0.02)
+                        root.CFrame = root.CFrame * CFrame.Angles(math.rad(-10), 0, 0)
+                    end
+                    task.wait(0.2)
+                end
+            end)
+        end
+    })
+
+    -- Handstand (2s hold)
+    Tabs.Fun:AddButton({
+        Title = "Handstand",
+        Description = "Flip upside down and hold",
+        Callback = function()
+            local root = getRoot()
+            if not root then return end
+            root.CFrame = root.CFrame * CFrame.Angles(math.rad(180), 0, 0)
+            task.wait(2)
+            root.CFrame = root.CFrame * CFrame.Angles(math.rad(180), 0, 0) -- revert
+        end
+    })
+
+    -- One-arm Handstand (tilted, 2s hold)
+    Tabs.Fun:AddButton({
+        Title = "One-arm Handstand",
+        Description = "Balance on one arm like a boss",
+        Callback = function()
+            local root = getRoot()
+            if not root then return end
+            root.CFrame = root.CFrame * CFrame.Angles(math.rad(180), 0, math.rad(15))
+            task.wait(2)
+            root.CFrame = root.CFrame * CFrame.Angles(math.rad(180), 0, math.rad(-15)) -- revert
+        end
+    })
+
+    -- Planche (2s hold)
+    Tabs.Fun:AddButton({
+        Title = "Planche",
+        Description = "Hold yourself parallel to the ground",
+        Callback = function()
+            local root = getRoot()
+            if not root then return end
+            root.CFrame = root.CFrame * CFrame.Angles(math.rad(90), 0, 0)
+            task.wait(2)
+            root.CFrame = root.CFrame * CFrame.Angles(math.rad(-90), 0, 0) -- revert
+        end
+    })
+
+    -- Ragdoll Mode
+    Tabs.Fun:AddButton({
+        Title = "Ragdoll Mode",
+        Description = "Makes you flop like a ragdoll",
+        Callback = function()
+            local char = LocalPlayer.Character
+            if not char then return end
+            for _, part in pairs(char:GetDescendants()) do
+                if part:IsA("Motor6D") then
+                    local socket = Instance.new("BallSocketConstraint")
+                    local a1 = Instance.new("Attachment")
+                    local a2 = Instance.new("Attachment")
+                    a1.Parent = part.Part0
+                    a2.Parent = part.Part1
+                    socket.Attachment0 = a1
+                    socket.Attachment1 = a2
+                    socket.Parent = part.Part0
+                    part:Destroy()
+                end
+            end
+        end
+    })
+
+    -- Fake Chat Spam (client-side only)
+    Tabs.Fun:AddButton({
+        Title = "Fake Chat Spam",
+        Description = "Spam funny messages in YOUR chat (nobody else sees it)",
+        Callback = function()
+            for i = 1, 10 do
+                StarterGui:SetCore("ChatMakeSystemMessage", {
+                    Text = "[ShadowCore Troll]: I am under your bed " .. tostring(math.random(1000,9999)),
+                    Color = Color3.fromRGB(math.random(0,255), math.random(0,255), math.random(0,255)),
+                    Font = Enum.Font.SourceSansBold,
+                    FontSize = Enum.FontSize.Size24
+                })
+                task.wait(0.3)
+            end
+        end
+    })
+
+    -- Crazy Walk (toggle)
+    local crazyWalk = false
+    Tabs.Fun:AddToggle("CrazyWalkToggle", {
+        Title = "Crazy Walk",
+        Description = "Your legs go nuts when walking",
+        Default = false,
+        Callback = function(state) crazyWalk = state end
+    })
+    RunService.Stepped:Connect(function()
+        if crazyWalk then
+            local root = getRoot()
+            if root then
+                root.CFrame = root.CFrame * CFrame.Angles(0, 0, math.rad(math.random(-10, 10)))
+            end
+        end
+    end)
+
+    -- Invert Screen Colors (5s)
+    Tabs.Fun:AddButton({
+        Title = "Invert Screen Colors",
+        Description = "Mess up your vision for 5 seconds",
+        Callback = function()
+            local invert = Instance.new("ColorCorrectionEffect")
+            invert.Name = "SC_InvertColors"
+            invert.Contrast = -2
+            invert.Brightness = 0.1
+            invert.Saturation = -3
+            invert.Parent = Lighting
+            task.delay(5, function()
+                if invert then invert:Destroy() end
+            end)
+        end
+    })
+
+    -- Clown Mode (Ultimate Chaos)
+    Tabs.Fun:AddButton({
+        Title = "Clown Mode",
+        Description = "Spin + crazy walk + earthquake + inverted colors",
+        Callback = function()
+            earthquakeEnabled = true
+            crazyWalk = true
+            local invert = Instance.new("ColorCorrectionEffect")
+            invert.Name = "SC_ClownInvert"
+            invert.Contrast = -2
+            invert.Brightness = 0.1
+            invert.Saturation = -3
+            invert.Parent = Lighting
+
+            local root = getRoot()
+            if root then
+                for i = 1, 100 do
+                    task.wait(0.05)
+                    root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(20), 0)
+                end
+            end
+
+            task.delay(5, function()
+                earthquakeEnabled = false
+                crazyWalk = false
+                if invert then invert:Destroy() end
+            end)
+        end
+    })
+end
+
+-----------------------------------------------------------------
+-- ======================= Auto Bandage Tab =====================
+-----------------------------------------------------------------
+do
+    local AutoBandage = Tabs.AutoBandage:AddToggle("AutoBandage", {
+        Title = "Auto Bandage",
+        Description = "Hold a Bandage to Work",
+        Default = false
+    })
+    AutoBandage:OnChanged(function(State)
+        task.spawn(function()
+            while State do
+                task.wait(1)
+                local player = game.Players.LocalPlayer
+                if player.Character and player.Character:FindFirstChild("Humanoid") then
+                    local humanoid = player.Character.Humanoid
+                    if humanoid.Health < humanoid.MaxHealth then
+                        humanoid.Health = humanoid.MaxHealth
+                        print("Healed player!")
+                    end
+                end
+                if not AutoBandage.Value then break end
+            end
+        end)
+    end)
+end
+-- ======================= Gluttony (Auto Consume Dropped Food) - Auto Bandage Tab =======================
+local GluttonyEnabled = false
+local consumeRange = 50
+local validFoods = {"Carrot","Berry","Cooked Morsel","Cooked Steak","Cake"}
+
+local function isFood(item)
+    for _, name in ipairs(validFoods) do
+        if item.Name == name then return true end
+    end
+    return false
+end
+
+Tabs.AutoBandage:AddSection("Auto Eat")
+Tabs.AutoBandage:AddSlider("Gluttony_Range", {
+    Title = "Consume Range",
+    Description = "Max distance to auto eat dropped food",
+    Default = consumeRange, Min = 10, Max = 300,
+    Rounding = 0,
+    Callback = function(v) consumeRange = v end
+})
+Tabs.AutoBandage:AddToggle("Gluttony_Enabled", {
+    Title = "Auto Eat",
+    Default = false,
+    Callback = function(enabled)
+        GluttonyEnabled = enabled
+        if enabled then
+            local RemoteConsume = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem")
+            task.spawn(function()
+                while GluttonyEnabled do
+                    local hrp = getHRP()
+                    if hrp and Workspace:FindFirstChild("Items") then
+                        for _, drop in ipairs(Workspace.Items:GetChildren()) do
+                            if isFood(drop) and drop.PrimaryPart then
+                                local dist = (drop.PrimaryPart.Position - hrp.Position).Magnitude
+                                if dist <= consumeRange then
+                                    local args = {drop}
+                                    pcall(function()
+                                        RemoteConsume:InvokeServer(unpack(args))
+                                    end)
+                                    task.wait(0.5)
+                                end
+                            end
+                        end
+                    end
+                    task.wait(1)
+                end
+            end)
+        end
+    end
+})
+-----------------------------------------------------------------
+-- ======================= Exploit Bring Stuff Tab ======================
+-----------------------------------------------------------------
+-- Bring Items Script with Multi-Select Fluent UI and adjustable bring range
+
+-- ===================== CONFIGURABLE ITEMS LIST =====================
+local teleportableItems = {
+    "Cake", "Carrot", "Apple", "Berry", "Morsel", "Steak", "Stew",
+    "Bandage", "MedKit", "Chili", "Hearty Stew", "Meat", "Sandwhich",
+    "Corn", "Pumpkin", "Ribs"
+}
+
+-- ===================== UI SETUP =====================
+local BringStuffTab = Tabs and Tabs.BringStuff or nil
+if not BringStuffTab then
+    warn("BringStuffTab not found! Make sure Tabs.BringStuff exists before loading this script.")
+    return
+end
+
+local selectedTeleportItems = {}
+local bringRange = 100
+
+BringStuffTab:AddSection("FOODS")
+
+BringStuffTab:AddSlider("BringRangeSlider", {
+    Title = "Bring Range",
+    Description = "Max distance to bring items",
+    Default = 100,
+    Min = 50,
+    Max = 300,
+    Rounding = 0,
+    Callback = function(val)
+        bringRange = val
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({Title="Bring Range", Content="Set bring range to "..val, Duration=2})
+        end
+    end
+})
+
+BringStuffTab:AddDropdown("TeleportItemsDropdown", {
+    Title = "Foods",
+    Values = teleportableItems,
+    Multi = true,
+    Default = {},
+    Callback = function(selected)
+        selectedTeleportItems = selected
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({Title="Teleport Selection", Content="Selected: "..table.concat(selected, ", "), Duration=2})
+        end
+    end
+})
+
+BringStuffTab:AddButton({
+    Title = "Select All",
+    Description = "Select all teleportable items",
+    Callback = function()
+        selectedTeleportItems = {}
+        for _, item in ipairs(teleportableItems) do
+            table.insert(selectedTeleportItems, item)
+        end
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({Title="Select All", Content="All items selected for teleport.", Duration=2})
+        end
+    end
+})
+
+BringStuffTab:AddButton({
+    Title = "Deselect All",
+    Description = "Clear teleport selection",
+    Callback = function()
+        selectedTeleportItems = {}
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({Title="Deselect All", Content="All teleport selections cleared.", Duration=2})
+        end
+    end
+})
+
+-- ===================== TELEPORT LOGIC =====================
+local function getRoot()
+    local p = game.Players.LocalPlayer
+    return p and p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+end
+
+-- Helper to get an item's primary part
+local function getItemPart(obj)
+    return obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
+end
+
+-- Checks if item is within bring range
+local function isWithinRange(obj, root, range)
+    local part = getItemPart(obj)
+    return part and (part.Position - root.Position).Magnitude <= range
+end
+
+-- Fires the pickup remote event to unlock the item for teleport
+local function unlockItem(item)
+    local pickupRemote = game:GetService("ReplicatedStorage"):FindFirstChild("RemoteEvents") and
+        game:GetService("ReplicatedStorage").RemoteEvents:FindFirstChild("RequestStartDraggingItem")
+    if pickupRemote then
+        pickupRemote:FireServer(item)
+        return true
+    end
+    return false
+end
+
+BringStuffTab:AddButton({
+    Title = "Teleport Selected Items",
+    Description = "Teleport all selected items to you (uses game pickup logic and range)",
+    Callback = function()
+        local root = getRoot()
+        if not root then
+            if Fluent and Fluent.Notify then
+                Fluent:Notify({Title="Teleport Items", Content="Player not ready.", Duration=3})
+            end
+            return
+        end
+        if #selectedTeleportItems == 0 then
+            if Fluent and Fluent.Notify then
+                Fluent:Notify({Title="Teleport Items", Content="No items selected!", Duration=3})
+            end
+            return
+        end
+
+        local itemsFolder = workspace:FindFirstChild("Items")
+        if not itemsFolder then
+            if Fluent and Fluent.Notify then
+                Fluent:Notify({Title="Teleport Items", Content="Items folder missing.", Duration=3})
+            end
+            return
+        end
+
+        local count, failed = 0, 0
+
+        for _, wanted in ipairs(selectedTeleportItems) do
+            for _, obj in ipairs(itemsFolder:GetChildren()) do
+                if obj.Name == wanted and isWithinRange(obj, root, bringRange) then
+                    -- Step 1: Try to unlock (pickup) via remote
+                    local unlocked = unlockItem(obj)
+                    task.wait(0.25) -- Wait for the server to process pickup
+
+                    -- Step 2: Try to teleport if not anchored/constrained
+                    local part = getItemPart(obj)
+                    if part and not part.Anchored then
+                        obj:SetPrimaryPartCFrame(root.CFrame + Vector3.new(math.random(-4,4), 2, math.random(-4,4)))
+                        count = count + 1
+                    else
+                        failed = failed + 1
+                    end
+                end
+            end
+        end
+
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({
+                Title = "Teleport Items",
+                Content = string.format("Teleported %d item(s), skipped %d (locked, out of range, or failed)", count, failed),
+                Duration = 4
+            })
+        end
+    end
+})
+-- Bring Items Script with Multi-Select Fluent UI and adjustable bring range
+
+-- ===================== CONFIGURABLE ITEMS LIST =====================
+local teleportableItems = {
+    "Log", "Chair", "Biofuel", "Coal", "Fuel Canister", "Oil Barrel"
+}
+
+-- ===================== UI SETUP =====================
+local BringStuffTab = Tabs and Tabs.BringStuff or nil
+if not BringStuffTab then
+    warn("BringStuffTab not found! Make sure Tabs.BringStuff exists before loading this script.")
+    return
+end
+
+local selectedTeleportItems = {}
+local bringRange = 100
+
+BringStuffTab:AddSection("FUEL")
+
+BringStuffTab:AddSlider("BringRangeSlider", {
+    Title = "Bring Range",
+    Description = "Max distance to bring items",
+    Default = 100,
+    Min = 50,
+    Max = 300,
+    Rounding = 0,
+    Callback = function(val)
+        bringRange = val
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({Title="Bring Range", Content="Set bring range to "..val, Duration=2})
+        end
+    end
+})
+
+BringStuffTab:AddDropdown("TeleportItemsDropdown", {
+    Title = "Fuel",
+    Values = teleportableItems,
+    Multi = true,
+    Default = {},
+    Callback = function(selected)
+        selectedTeleportItems = selected
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({Title="Teleport Selection", Content="Selected: "..table.concat(selected, ", "), Duration=2})
+        end
+    end
+})
+
+BringStuffTab:AddButton({
+    Title = "Select All",
+    Description = "Select all teleportable items",
+    Callback = function()
+        selectedTeleportItems = {}
+        for _, item in ipairs(teleportableItems) do
+            table.insert(selectedTeleportItems, item)
+        end
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({Title="Select All", Content="All items selected for teleport.", Duration=2})
+        end
+    end
+})
+
+BringStuffTab:AddButton({
+    Title = "Deselect All",
+    Description = "Clear teleport selection",
+    Callback = function()
+        selectedTeleportItems = {}
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({Title="Deselect All", Content="All teleport selections cleared.", Duration=2})
+        end
+    end
+})
+
+-- ===================== TELEPORT LOGIC =====================
+local function getRoot()
+    local p = game.Players.LocalPlayer
+    return p and p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+end
+
+-- Helper to get an item's primary part
+local function getItemPart(obj)
+    return obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
+end
+
+-- Checks if item is within bring range
+local function isWithinRange(obj, root, range)
+    local part = getItemPart(obj)
+    return part and (part.Position - root.Position).Magnitude <= range
+end
+
+-- Fires the pickup remote event to unlock the item for teleport
+local function unlockItem(item)
+    local pickupRemote = game:GetService("ReplicatedStorage"):FindFirstChild("RemoteEvents") and
+        game:GetService("ReplicatedStorage").RemoteEvents:FindFirstChild("RequestStartDraggingItem")
+    if pickupRemote then
+        pickupRemote:FireServer(item)
+        return true
+    end
+    return false
+end
+
+BringStuffTab:AddButton({
+    Title = "Teleport Selected Items",
+    Description = "Teleport all selected items to you (uses game pickup logic and range)",
+    Callback = function()
+        local root = getRoot()
+        if not root then
+            if Fluent and Fluent.Notify then
+                Fluent:Notify({Title="Teleport Items", Content="Player not ready.", Duration=3})
+            end
+            return
+        end
+        if #selectedTeleportItems == 0 then
+            if Fluent and Fluent.Notify then
+                Fluent:Notify({Title="Teleport Items", Content="No items selected!", Duration=3})
+            end
+            return
+        end
+
+        local itemsFolder = workspace:FindFirstChild("Items")
+        if not itemsFolder then
+            if Fluent and Fluent.Notify then
+                Fluent:Notify({Title="Teleport Items", Content="Items folder missing.", Duration=3})
+            end
+            return
+        end
+
+        local count, failed = 0, 0
+
+        for _, wanted in ipairs(selectedTeleportItems) do
+            for _, obj in ipairs(itemsFolder:GetChildren()) do
+                if obj.Name == wanted and isWithinRange(obj, root, bringRange) then
+                    -- Step 1: Try to unlock (pickup) via remote
+                    local unlocked = unlockItem(obj)
+                    task.wait(0.25) -- Wait for the server to process pickup
+
+                    -- Step 2: Try to teleport if not anchored/constrained
+                    local part = getItemPart(obj)
+                    if part and not part.Anchored then
+                        obj:SetPrimaryPartCFrame(root.CFrame + Vector3.new(math.random(-4,4), 2, math.random(-4,4)))
+                        count = count + 1
+                    else
+                        failed = failed + 1
+                    end
+                end
+            end
+        end
+
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({
+                Title = "Teleport Items",
+                Content = string.format("Teleported %d item(s), skipped %d (locked, out of range, or failed)", count, failed),
+                Duration = 4
+            })
+        end
+    end
+})
+-- Bring Items Script with Multi-Select Fluent UI and adjustable bring range
+
+-- ===================== CONFIGURABLE ITEMS LIST =====================
+local teleportableItems = {
+    "Bolt", "Sheet Metal", "UFO Junk", "UFO Component", "Broken Fan",
+    "Old Radio", "Broken Microwave", "Tyre", "Metal Chair", "Old Car Engine",
+    "Washing Machine", "Cultist Experiment", "Cultist Prototype", "UFO Scrap"
+}
+
+-- ===================== UI SETUP =====================
+local BringStuffTab = Tabs and Tabs.BringStuff or nil
+if not BringStuffTab then
+    warn("BringStuffTab not found! Make sure Tabs.BringStuff exists before loading this script.")
+    return
+end
+
+local selectedTeleportItems = {}
+local bringRange = 100
+
+BringStuffTab:AddSection("MATERIALS")
+
+BringStuffTab:AddSlider("BringRangeSlider", {
+    Title = "Bring Range",
+    Description = "Max distance to bring items",
+    Default = 100,
+    Min = 50,
+    Max = 300,
+    Rounding = 0,
+    Callback = function(val)
+        bringRange = val
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({Title="Bring Range", Content="Set bring range to "..val, Duration=2})
+        end
+    end
+})
+
+BringStuffTab:AddDropdown("TeleportItemsDropdown", {
+    Title = "Gear",
+    Values = teleportableItems,
+    Multi = true,
+    Default = {},
+    Callback = function(selected)
+        selectedTeleportItems = selected
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({Title="Teleport Selection", Content="Selected: "..table.concat(selected, ", "), Duration=2})
+        end
+    end
+})
+
+BringStuffTab:AddButton({
+    Title = "Select All",
+    Description = "Select all teleportable items",
+    Callback = function()
+        selectedTeleportItems = {}
+        for _, item in ipairs(teleportableItems) do
+            table.insert(selectedTeleportItems, item)
+        end
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({Title="Select All", Content="All items selected for teleport.", Duration=2})
+        end
+    end
+})
+
+BringStuffTab:AddButton({
+    Title = "Deselect All",
+    Description = "Clear teleport selection",
+    Callback = function()
+        selectedTeleportItems = {}
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({Title="Deselect All", Content="All teleport selections cleared.", Duration=2})
+        end
+    end
+})
+
+-- ===================== TELEPORT LOGIC =====================
+local function getRoot()
+    local p = game.Players.LocalPlayer
+    return p and p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+end
+
+-- Helper to get an item's primary part
+local function getItemPart(obj)
+    return obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
+end
+
+-- Checks if item is within bring range
+local function isWithinRange(obj, root, range)
+    local part = getItemPart(obj)
+    return part and (part.Position - root.Position).Magnitude <= range
+end
+
+-- Fires the pickup remote event to unlock the item for teleport
+local function unlockItem(item)
+    local pickupRemote = game:GetService("ReplicatedStorage"):FindFirstChild("RemoteEvents") and
+        game:GetService("ReplicatedStorage").RemoteEvents:FindFirstChild("RequestStartDraggingItem")
+    if pickupRemote then
+        pickupRemote:FireServer(item)
+        return true
+    end
+    return false
+end
+
+BringStuffTab:AddButton({
+    Title = "Teleport Selected Items",
+    Description = "Teleport all selected items to you (uses game pickup logic and range)",
+    Callback = function()
+        local root = getRoot()
+        if not root then
+            if Fluent and Fluent.Notify then
+                Fluent:Notify({Title="Teleport Items", Content="Player not ready.", Duration=3})
+            end
+            return
+        end
+        if #selectedTeleportItems == 0 then
+            if Fluent and Fluent.Notify then
+                Fluent:Notify({Title="Teleport Items", Content="No items selected!", Duration=3})
+            end
+            return
+        end
+
+        local itemsFolder = workspace:FindFirstChild("Items")
+        if not itemsFolder then
+            if Fluent and Fluent.Notify then
+                Fluent:Notify({Title="Teleport Items", Content="Items folder missing.", Duration=3})
+            end
+            return
+        end
+
+        local count, failed = 0, 0
+
+        for _, wanted in ipairs(selectedTeleportItems) do
+            for _, obj in ipairs(itemsFolder:GetChildren()) do
+                if obj.Name == wanted and isWithinRange(obj, root, bringRange) then
+                    -- Step 1: Try to unlock (pickup) via remote
+                    local unlocked = unlockItem(obj)
+                    task.wait(0.25) -- Wait for the server to process pickup
+
+                    -- Step 2: Try to teleport if not anchored/constrained
+                    local part = getItemPart(obj)
+                    if part and not part.Anchored then
+                        obj:SetPrimaryPartCFrame(root.CFrame + Vector3.new(math.random(-4,4), 2, math.random(-4,4)))
+                        count = count + 1
+                    else
+                        failed = failed + 1
+                    end
+                end
+            end
+        end
+
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({
+                Title = "Teleport Items",
+                Content = string.format("Teleported %d item(s), skipped %d (locked, out of range, or failed)", count, failed),
+                Duration = 4
+            })
+        end
+    end
+})
+-- Bring Items Script with Multi-Select Fluent UI and adjustable bring range
+
+-- ===================== CONFIGURABLE ITEMS LIST =====================
+local teleportableItems = {
+    "Bunny Foot", "Wolf Pelt", "Alpha Wolf Pelt", "Bear Pelt", "Arctic Fox Pelt",
+    "Polar Bear Pelt", "Mammoth Tusk"
+}
+
+-- ===================== UI SETUP =====================
+local BringStuffTab = Tabs and Tabs.BringStuff or nil
+if not BringStuffTab then
+    warn("BringStuffTab not found! Make sure Tabs.BringStuff exists before loading this script.")
+    return
+end
+
+local selectedTeleportItems = {}
+local bringRange = 100
+
+BringStuffTab:AddSection("Teleport Resource Items (Fluent Multi-Select)")
+
+BringStuffTab:AddSlider("BringRangeSlider", {
+    Title = "Bring Range",
+    Description = "Max distance to bring items",
+    Default = 100,
+    Min = 50,
+    Max = 300,
+    Rounding = 0,
+    Callback = function(val)
+        bringRange = val
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({Title="Bring Range", Content="Set bring range to "..val, Duration=2})
+        end
+    end
+})
+
+BringStuffTab:AddDropdown("TeleportItemsDropdown", {
+    Title = "Tools",
+    Values = teleportableItems,
+    Multi = true,
+    Default = {},
+    Callback = function(selected)
+        selectedTeleportItems = selected
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({Title="Teleport Selection", Content="Selected: "..table.concat(selected, ", "), Duration=2})
+        end
+    end
+})
+
+BringStuffTab:AddButton({
+    Title = "Select All",
+    Description = "Bring Selected Items",
+    Callback = function()
+        selectedTeleportItems = {}
+        for _, item in ipairs(teleportableItems) do
+            table.insert(selectedTeleportItems, item)
+        end
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({Title="Select All", Content="All items selected for teleport.", Duration=2})
+        end
+    end
+})
+
+BringStuffTab:AddButton({
+    Title = "Deselect All",
+    Description = "Clear teleport selection",
+    Callback = function()
+        selectedTeleportItems = {}
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({Title="Deselect All", Content="All teleport selections cleared.", Duration=2})
+        end
+    end
+})
+
+-- ===================== TELEPORT LOGIC =====================
+local function getRoot()
+    local p = game.Players.LocalPlayer
+    return p and p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+end
+
+-- Helper to get an item's primary part
+local function getItemPart(obj)
+    return obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
+end
+
+-- Checks if item is within bring range
+local function isWithinRange(obj, root, range)
+    local part = getItemPart(obj)
+    return part and (part.Position - root.Position).Magnitude <= range
+end
+
+-- Fires the pickup remote event to unlock the item for teleport
+local function unlockItem(item)
+    local pickupRemote = game:GetService("ReplicatedStorage"):FindFirstChild("RemoteEvents") and
+        game:GetService("ReplicatedStorage").RemoteEvents:FindFirstChild("RequestStartDraggingItem")
+    if pickupRemote then
+        pickupRemote:FireServer(item)
+        return true
+    end
+    return false
+end
+
+BringStuffTab:AddButton({
+    Title = "Bring Selected Items",
+    Description = "Bring all selected Items",
+    Callback = function()
+        local root = getRoot()
+        if not root then
+            if Fluent and Fluent.Notify then
+                Fluent:Notify({Title="Teleport Items", Content="Player not ready.", Duration=3})
+            end
+            return
+        end
+        if #selectedTeleportItems == 0 then
+            if Fluent and Fluent.Notify then
+                Fluent:Notify({Title="Teleport Items", Content="No items selected!", Duration=3})
+            end
+            return
+        end
+
+        local itemsFolder = workspace:FindFirstChild("Items")
+        if not itemsFolder then
+            if Fluent and Fluent.Notify then
+                Fluent:Notify({Title="Teleport Items", Content="Items folder missing.", Duration=3})
+            end
+            return
+        end
+
+        local count, failed = 0, 0
+
+        for _, wanted in ipairs(selectedTeleportItems) do
+            for _, obj in ipairs(itemsFolder:GetChildren()) do
+                if obj.Name == wanted and isWithinRange(obj, root, bringRange) then
+                    -- Step 1: Try to unlock (pickup) via remote
+                    local unlocked = unlockItem(obj)
+                    task.wait(0.25) -- Wait for the server to process pickup
+
+                    -- Step 2: Try to teleport if not anchored/constrained
+                    local part = getItemPart(obj)
+                    if part and not part.Anchored then
+                        obj:SetPrimaryPartCFrame(root.CFrame + Vector3.new(math.random(-4,4), 2, math.random(-4,4)))
+                        count = count + 1
+                    else
+                        failed = failed + 1
+                    end
+                end
+            end
+        end
+
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({
+                Title = "Teleport Items",
+                Content = string.format("Teleported %d item(s), skipped %d (locked, out of range, or failed)", count, failed),
+                Duration = 4
+            })
+        end
+    end
+})
+-- Bring Items Script with Multi-Select Fluent UI and adjustable bring range
+
+-- ===================== CONFIGURABLE ITEMS LIST =====================
+local teleportableItems = {
+    "Leather Body", "Iron Body", "Thorn Body", "Alien Armor", "Riot Shield", "Poison Armor",
+    "Spear", "Morningstar", "Katana", "Laser Sword", "Ice Sword", "Trident", "Poison Spear"
+}
+
+-- ===================== UI SETUP =====================
+local BringStuffTab = Tabs and Tabs.BringStuff or nil
+if not BringStuffTab then
+    warn("BringStuffTab not found! Make sure Tabs.BringStuff exists before loading this script.")
+    return
+end
+
+local selectedTeleportItems = {}
+local bringRange = 100
+
+BringStuffTab:AddSection("ARMOR/SWORD")
+
+BringStuffTab:AddSlider("BringRangeSlider", {
+    Title = "Bring Range",
+    Description = "Max distance to bring items",
+    Default = 100,
+    Min = 50,
+    Max = 300,
+    Rounding = 0,
+    Callback = function(val)
+        bringRange = val
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({Title="Bring Range", Content="Set bring range to "..val, Duration=2})
+        end
+    end
+})
+
+BringStuffTab:AddDropdown("TeleportItemsDropdown", {
+    Title = "Armor/Sword",
+    Values = teleportableItems,
+    Multi = true,
+    Default = {},
+    Callback = function(selected)
+        selectedTeleportItems = selected
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({Title="Teleport Selection", Content="Selected: "..table.concat(selected, ", "), Duration=2})
+        end
+    end
+})
+
+BringStuffTab:AddButton({
+    Title = "Select All",
+    Description = "Select all items!",
+    Callback = function()
+        selectedTeleportItems = {}
+        for _, item in ipairs(teleportableItems) do
+            table.insert(selectedTeleportItems, item)
+        end
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({Title="Select All", Content="All items selected for teleport.", Duration=2})
+        end
+    end
+})
+
+BringStuffTab:AddButton({
+    Title = "Deselect All",
+    Description = "Clear Bring selection",
+    Callback = function()
+        selectedTeleportItems = {}
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({Title="Deselect All", Content="All teleport selections cleared.", Duration=2})
+        end
+    end
+})
+
+-- ===================== TELEPORT LOGIC =====================
+local function getRoot()
+    local p = game.Players.LocalPlayer
+    return p and p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+end
+
+-- Helper to get an item's primary part
+local function getItemPart(obj)
+    return obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
+end
+
+-- Checks if item is within bring range
+local function isWithinRange(obj, root, range)
+    local part = getItemPart(obj)
+    return part and (part.Position - root.Position).Magnitude <= range
+end
+
+-- Fires the pickup remote event to unlock the item for teleport
+local function unlockItem(item)
+    local pickupRemote = game:GetService("ReplicatedStorage"):FindFirstChild("RemoteEvents") and
+        game:GetService("ReplicatedStorage").RemoteEvents:FindFirstChild("RequestStartDraggingItem")
+    if pickupRemote then
+        pickupRemote:FireServer(item)
+        return true
+    end
+    return false
+end
+
+BringStuffTab:AddButton({
+    Title = "Bring Selected Items",
+    Description = "Bring Selected Items to you",
+    Callback = function()
+        local root = getRoot()
+        if not root then
+            if Fluent and Fluent.Notify then
+                Fluent:Notify({Title="Teleport Items", Content="Player not ready.", Duration=3})
+            end
+            return
+        end
+        if #selectedTeleportItems == 0 then
+            if Fluent and Fluent.Notify then
+                Fluent:Notify({Title="Teleport Items", Content="No items selected!", Duration=3})
+            end
+            return
+        end
+
+        local itemsFolder = workspace:FindFirstChild("Items")
+        if not itemsFolder then
+            if Fluent and Fluent.Notify then
+                Fluent:Notify({Title="Teleport Items", Content="Items folder missing.", Duration=3})
+            end
+            return
+        end
+
+        local count, failed = 0, 0
+
+        for _, wanted in ipairs(selectedTeleportItems) do
+            for _, obj in ipairs(itemsFolder:GetChildren()) do
+                if obj.Name == wanted and isWithinRange(obj, root, bringRange) then
+                    -- Step 1: Try to unlock (pickup) via remote
+                    local unlocked = unlockItem(obj)
+                    task.wait(0.25) -- Wait for the server to process pickup
+
+                    -- Step 2: Try to teleport if not anchored/constrained
+                    local part = getItemPart(obj)
+                    if part and not part.Anchored then
+                        obj:SetPrimaryPartCFrame(root.CFrame + Vector3.new(math.random(-4,4), 2, math.random(-4,4)))
+                        count = count + 1
+                    else
+                        failed = failed + 1
+                    end
+                end
+            end
+        end
+
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({
+                Title = "Teleport Items",
+                Content = string.format("Teleported %d item(s), skipped %d (locked, out of range, or failed)", count, failed),
+                Duration = 4
+            })
+        end
+    end
+})
+
+
+-----------------------------------------------------------------
+-- ======================= Local Player Tab =====================
+-----------------------------------------------------------------
+do
+    local Players = game:GetService("Players")
+    local RunService = game:GetService("RunService")
+    local UserInputService = game:GetService("UserInputService")
+    local LocalPlayer = Players.LocalPlayer
+
+    -- Walk Speed
+    local SpeedValue = 16
+    local SpeedSlider = Tabs.LocalPlayer:AddSlider("WalkSpeedSlider", {
+        Title = "Walk Speed",
+        Description = "Adjust your walking speed",
+        Default = 16,
+        Min = 16,
+        Max = 100,
+        Rounding = 1,
+        Callback = function(Value)
+            SpeedValue = Value
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                LocalPlayer.Character.Humanoid.WalkSpeed = SpeedValue
+            end
+        end
+    })
+    LocalPlayer.CharacterAdded:Connect(function(char) char:WaitForChild("Humanoid").WalkSpeed = SpeedValue end)
+
+    -- Infinite Jump
+    local InfiniteJumpEnabled = false
+    Tabs.LocalPlayer:AddToggle("InfiniteJumpToggle", {
+        Title = "Infinite Jump",
+        Description = "Jump as many times as you want",
+        Default = false,
+        Callback = function(State) InfiniteJumpEnabled = State end
+    })
+    UserInputService.JumpRequest:Connect(function()
+        if InfiniteJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end)
+
+    -- NoClip
+    local NoClipEnabled = false
+    local NoClipConnection
+    Tabs.LocalPlayer:AddToggle("NoClipToggle", {
+        Title = "No Clip",
+        Description = "Walk through walls",
+        Default = false,
+        Callback = function(State)
+            NoClipEnabled = State
+            if NoClipEnabled then
+                NoClipConnection = RunService.Stepped:Connect(function()
+                    if LocalPlayer.Character then
+                        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                            if part:IsA("BasePart") then part.CanCollide = false end
+                        end
+                    end
+                end)
+            else
+                if NoClipConnection then NoClipConnection:Disconnect() NoClipConnection = nil end
+            end
+        end
+    })
+
+    -- Reset Character
+    Tabs.LocalPlayer:AddButton({Title = "Reset Character", Description = "Resets your character", Callback = function()
+        if LocalPlayer.Character then LocalPlayer.Character:BreakJoints() print("Character reset!") end
+    end})
+end
+-----------------------------------------------------------------
+-- ======================= Teleport Tab =========================
+-----------------------------------------------------------------
+do
+    Tabs.Teleport:AddInput("TeleportInput", {
+        Title = "Teleport To",
+        Default = "0,0,0",
+        Placeholder = "Enter coordinates like 0,5,0",
+        Callback = function(Value)
+            local player = game.Players.LocalPlayer
+            local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+            if root then
+                local x, y, z = Value:match("([^,]+),([^,]+),([^,]+)")
+                x, y, z = tonumber(x), tonumber(y), tonumber(z)
+                if x and y and z then root.CFrame = CFrame.new(x,y,z) print("Teleported to:", x, y, z) else print("Invalid coordinates!") end
+            end
+        end
+    })
+    Tabs.Teleport:AddKeybind("TeleportKey", {
+        Title = "Teleport Key",
+        Mode = "Toggle",
+        Default = "F",
+        Callback = function()
+            local player = game.Players.LocalPlayer
+            local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+            if root then root.CFrame = CFrame.new(0,10,0) print("Teleported to preset location!") end
+        end
+    })
+    Tabs.Teleport:AddButton({
+        Title = "Teleport to Camp",
+        Description = "Instantly teleport to coordinates 9, 4, -1",
+        Callback = function()
+            local player = game.Players.LocalPlayer
+            local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+            if root then root.CFrame = CFrame.new(9, 4, -1) print("Teleported to: 9, 4, -1") else warn("Cannot teleport: HumanoidRootPart not found.") end
+        end
+    })
+end
+-- Teleport Tab Features
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local function GetPlayerList()
+    local names = {}
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            table.insert(names, plr.Name)
+        end
+    end
+    return names
+end
+
+local SelectedPlayer = nil
+
+Tabs.Teleport:AddDropdown("PlayerList", {
+    Title = "Choose Player",
+    Values = GetPlayerList(),
+    Multi = false,
+    Default = nil,
+    Callback = function(Value)
+        SelectedPlayer = Value
+        Fluent:Notify({
+            Title = "Player Selected",
+            Content = "Selected: " .. Value,
+            Duration = 4
+        })
+    end
+})
+
+Tabs.Teleport:AddButton({
+    Title = "Teleport to Player",
+    Description = "Teleports you to the chosen player",
+    Callback = function()
+        if SelectedPlayer then
+            local Target = Players:FindFirstChild(SelectedPlayer)
+            if Target and Target.Character and Target.Character:FindFirstChild("HumanoidRootPart") then
+                LocalPlayer.Character:MoveTo(Target.Character.HumanoidRootPart.Position + Vector3.new(0,3,0))
+                Fluent:Notify({
+                    Title = "Teleported",
+                    Content = "You teleported to " .. SelectedPlayer,
+                    Duration = 5
+                })
+            else
+                Fluent:Notify({
+                    Title = "Error",
+                    Content = "Target not found or not loaded.",
+                    Duration = 5
+                })
+            end
+        else
+            Fluent:Notify({
+                Title = "No Player Selected",
+                Content = "Please choose a player first.",
+                Duration = 5
+            })
+        end
+    end
+})
+
+Tabs.Teleport:AddButton({
+    Title = "Teleport to Random Player",
+    Description = "Teleports you to a random player in the server",
+    Callback = function()
+        local PlayerList = GetPlayerList()
+        if #PlayerList > 0 then
+            local RandomName = PlayerList[math.random(1, #PlayerList)]
+            local Target = Players:FindFirstChild(RandomName)
+            if Target and Target.Character and Target.Character:FindFirstChild("HumanoidRootPart") then
+                LocalPlayer.Character:MoveTo(Target.Character.HumanoidRootPart.Position + Vector3.new(0,3,0))
+                Fluent:Notify({
+                    Title = "Teleported",
+                    Content = "You teleported to random player: " .. RandomName,
+                    Duration = 5
+                })
+            end
+        else
+            Fluent:Notify({
+                Title = "No Players",
+                Content = "No players available to teleport.",
+                Duration = 5
+            })
+        end
+    end
+})
+
+-----------------------------------------------------------------
+-- ======================= Visuals Tab ==========================
+-----------------------------------------------------------------
+do
+    local Players = game:GetService("Players")
+    local RunService = game:GetService("RunService")
+    local LocalPlayer = Players.LocalPlayer
+    local ESPPlayers = {}
+    local PlayerESPEnabled = false
+    local espChestEnabled = false
+    local drawnLabels = {}
+    local chestNames = {"Item Chest","Item Chest1","Item Chest2","Item Chest3","Item Chest 4","Item Chest5","Item Chest6"}
+
+    -----------------------------------------------------------------
+    -- Player ESP
+    -----------------------------------------------------------------
+    Tabs.Visuals:AddToggle("PlayerESP", {
+        Title = "Enable Player ESP",
+        Description = "Highlights players with health bar and distance",
+        Default = false,
+        Callback = function(state)
+            PlayerESPEnabled = state
+            if not state then
+                for _, data in pairs(ESPPlayers) do
+                    if data.Billboard then data.Billboard:Destroy() end
+                end
+                ESPPlayers = {}
+            end
+        end
+    })
+
+    -- Player ESP Colorpicker
+    local PlayerESPColor = Tabs.Visuals:AddColorpicker("PlayerESPColor", {
+        Title = "Player ESP Color",
+        Description = "Color of player ESP name/distance text",
+        Transparency = 0,
+        Default = Color3.fromRGB(255, 255, 255)
+    })
+
+    local function CreateESPForPlayer(plr)
+        if ESPPlayers[plr] then return end
+        if not plr.Character or not plr.Character:FindFirstChild("HumanoidRootPart") then return end
+        local hrp = plr.Character.HumanoidRootPart
+
+        local bb = Instance.new("BillboardGui")
+        bb.Name = "SC_PlayerESP"
+        bb.Adornee = hrp
+        bb.Size = UDim2.new(0,120,0,36)
+        bb.StudsOffset = Vector3.new(0,2,0)
+        bb.AlwaysOnTop = true
+        bb.Parent = hrp
+
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Size = UDim2.new(1,0,0.3,0)
+        nameLabel.Font = Enum.Font.GothamBold
+        nameLabel.TextColor3 = PlayerESPColor.Value
+        nameLabel.TextScaled = true
+        nameLabel.Text = plr.Name
+        nameLabel.Parent = bb
+
+        local healthBar = Instance.new("Frame")
+        healthBar.BackgroundColor3 = Color3.fromRGB(173, 216, 230)
+        healthBar.Size = UDim2.new(1,0,0.2,0)
+        healthBar.Position = UDim2.new(0,0,0.3,0)
+        healthBar.BorderSizePixel = 0
+        healthBar.Parent = bb
+
+        local distLabel = Instance.new("TextLabel")
+        distLabel.BackgroundTransparency = 1
+        distLabel.Size = UDim2.new(1,0,0.3,0)
+        distLabel.Position = UDim2.new(0,0,0.5,0)
+        distLabel.Font = Enum.Font.Gotham
+        distLabel.TextColor3 = PlayerESPColor.Value
+        distLabel.TextScaled = true
+        distLabel.Text = "Distance: 0"
+        distLabel.Parent = bb
+
+        ESPPlayers[plr] = {Billboard = bb, HealthBar = healthBar, DistanceLabel = distLabel, NameLabel = nameLabel}
+    end
+
+    RunService.RenderStepped:Connect(function()
+        if not PlayerESPEnabled then return end
+        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("Humanoid") then
+                CreateESPForPlayer(plr)
+                local hum = plr.Character.Humanoid
+                local data = ESPPlayers[plr]
+                if data then
+                    local healthRatio = math.clamp(hum.Health / (hum.MaxHealth or 1), 0, 1)
+                    data.HealthBar.Size = UDim2.new(healthRatio,0,0.2,0)
+                    if healthRatio > 0.6 then
+                        data.HealthBar.BackgroundColor3 = Color3.fromRGB(0,255,0)
+                    elseif healthRatio > 0.3 then
+                        data.HealthBar.BackgroundColor3 = Color3.fromRGB(255,255,0)
+                    else
+                        data.HealthBar.BackgroundColor3 = Color3.fromRGB(255,0,0)
+                    end
+
+                    local dist = (plr.Character.HumanoidRootPart.Position - hrp.Position).Magnitude
+                    data.DistanceLabel.Text = ("Distance: %.1f"):format(dist)
+
+                    if dist < 20 then
+                        data.DistanceLabel.TextColor3 = Color3.fromRGB(0,255,0)
+                    elseif dist < 50 then
+                        data.DistanceLabel.TextColor3 = Color3.fromRGB(255,255,0)
+                    else
+                        data.DistanceLabel.TextColor3 = Color3.fromRGB(255,0,0)
+                    end
+
+                    data.NameLabel.TextColor3 = PlayerESPColor.Value
+                end
+            end
+        end
+    end)
+
+    PlayerESPColor:OnChanged(function(newColor)
+        for _, data in pairs(ESPPlayers) do
+            if data.NameLabel then data.NameLabel.TextColor3 = newColor end
+            if data.DistanceLabel then data.DistanceLabel.TextColor3 = newColor end
+        end
+    end)
+
+    -----------------------------------------------------------------
+    -- Chest ESP
+    -----------------------------------------------------------------
+    local ChestESPColor = Tabs.Visuals:AddColorpicker("ChestESPColor", {
+        Title = "Chest ESP Color",
+        Description = "Choose the color of chest ESP labels",
+        Transparency = 0,
+        Default = Color3.fromRGB(255, 221, 40)
+    })
+
+    local function highlightChests()
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if table.find(chestNames, obj.Name) and obj:IsA("Model") and not drawnLabels[obj] then
+                local bill = Instance.new("BillboardGui")
+                bill.Name = "ChestESP"
+                bill.Adornee = obj
+                bill.Size = UDim2.new(0, 100, 0, 40)
+                bill.StudsOffset = Vector3.new(0, 2, 0)
+                bill.AlwaysOnTop = true
+                bill.Parent = obj
+
+                local label = Instance.new("TextLabel")
+                label.Size = UDim2.new(1, 0, 1, 0)
+                label.BackgroundTransparency = 1
+                label.Text = obj.Name
+                label.TextColor3 = ChestESPColor.Value
+                label.Font = Enum.Font.GothamBold
+                label.TextStrokeTransparency = 0.2
+                label.TextScaled = true
+                label.Parent = bill
+
+                drawnLabels[obj] = {Gui = bill, Label = label}
+            end
+        end
+    end
+
+    local function removeChestsESP()
+        for obj, data in pairs(drawnLabels) do
+            if data.Gui and data.Gui.Parent then data.Gui:Destroy() end
+        end
+        drawnLabels = {}
+    end
+
+    Tabs.Visuals:AddToggle("ESPChest", {
+        Title = "Chest ESP",
+        Description = "Highlights all Item Chest models",
+        Default = false,
+        Callback = function(val)
+            espChestEnabled = val
+            if not val then removeChestsESP() end
+        end
+    })
+
+    ChestESPColor:OnChanged(function(newColor)
+        for _, data in pairs(drawnLabels) do
+            if data.Label then
+                data.Label.TextColor3 = newColor
+            end
+        end
+    end)
+
+    RunService.RenderStepped:Connect(function()
+        if espChestEnabled then highlightChests() end
+    end)
+
+-----------------------------------------------------------------
+-- Children ESP with Distance and Teleport/Dropdown
+-----------------------------------------------------------------
+local ChildrenESPColor = Tabs.Visuals:AddColorpicker("ChildrenEspColor", {
+    Title = "Children ESP Color",
+    Description = "Color + transparency for Lost Child ESP",
+    Transparency = 0,
+    Default = Color3.fromRGB(255, 255, 0)
+})
+
+local kidNames = {"Lost Child", "Lost Child2", "Lost Child3", "Lost Child4"}
+local selectedKid = kidNames[1]
+
+Tabs.Visuals:AddDropdown("ChildrenESP_KidSelect", {
+    Title = "Select Kid To Save",
+    Description = "Choose which Lost Child to teleport to.",
+    Values = kidNames,
+    Default = kidNames[1],
+    Multi = false,
+    Callback = function(val)
+        selectedKid = val
+    end
+})
+
+Tabs.Visuals:AddButton({
+    Title = "Teleport To Selected Kid",
+    Description = "Teleports you to the selected Lost Child.",
+    Callback = function()
+        local characters = workspace:FindFirstChild("Characters")
+        if not characters then
+            if Fluent and Fluent.Notify then
+                Fluent:Notify({
+                    Title = "Teleport Failed",
+                    Content = "Could not find workspace > Characters!",
+                    Duration = 3
+                })
+            end
+            return
+        end
+        local kid = characters:FindFirstChild(selectedKid)
+        if kid and kid:IsA("Model") then
+            local hrp = kid:FindFirstChild("HumanoidRootPart") or kid.PrimaryPart
+            local player = game.Players.LocalPlayer
+            if hrp and player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                player.Character.HumanoidRootPart.CFrame = hrp.CFrame + Vector3.new(0, 3, 0)
+                if Fluent and Fluent.Notify then
+                    Fluent:Notify({
+                        Title = "Teleported",
+                        Content = "You were teleported to " .. selectedKid,
+                        Duration = 3
+                    })
+                end
+            else
+                if Fluent and Fluent.Notify then
+                    Fluent:Notify({
+                        Title = "Teleport Failed",
+                        Content = "Could not find HumanoidRootPart for kid or player!",
+                        Duration = 3
+                    })
+                end
+            end
+        else
+            if Fluent and Fluent.Notify then
+                Fluent:Notify({
+                    Title = "Teleport Failed",
+                    Content = "Selected kid not found!",
+                    Duration = 3
+                })
+            end
+        end
+    end
+})
+
+Tabs.Visuals:AddToggle("ChildrenESP", {
+    Title = "Children ESP",
+    Description = "Highlights Lost Child, Lost Child2, Lost Child3, Lost Child4 and shows distance",
+    Default = false,
+    Callback = function(enabled)
+        local color = ChildrenESPColor.Value
+        local transparency = ChildrenESPColor.Transparency
+        UpdateChildrenESP(enabled, color, transparency)
+    end
+})
+
+local function ApplyESP(model, color, transparency)
+    if model:FindFirstChild("ESPHighlight") then
+        model.ESPHighlight:Destroy()
+    end
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "ESPHighlight"
+    highlight.Adornee = model
+    highlight.FillColor = color
+    highlight.FillTransparency = transparency or 0
+    highlight.OutlineColor = Color3.fromRGB(0, 0, 0)
+    highlight.OutlineTransparency = 0
+    highlight.Parent = model
+
+    -- Add BillboardGui for distance display
+    if model:FindFirstChild("DistanceGui") then
+        model.DistanceGui:Destroy()
+    end
+
+    local hrp = model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart
+    if hrp and game.Players.LocalPlayer and game.Players.LocalPlayer.Character then
+        local playerHRP = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if playerHRP then
+            local distance = (hrp.Position - playerHRP.Position).Magnitude
+            local billboard = Instance.new("BillboardGui")
+            billboard.Name = "DistanceGui"
+            billboard.Size = UDim2.new(0, 100, 0, 30)
+            billboard.Adornee = hrp
+            billboard.AlwaysOnTop = true
+            billboard.StudsOffset = Vector3.new(0, 3, 0)
+
+            local textLabel = Instance.new("TextLabel")
+            textLabel.Parent = billboard
+            textLabel.Size = UDim2.new(1, 0, 1, 0)
+            textLabel.BackgroundTransparency = 1
+            textLabel.TextColor3 = color
+            textLabel.TextStrokeTransparency = 0.5
+            textLabel.TextScaled = true
+            textLabel.Font = Enum.Font.SourceSansBold
+            textLabel.Text = string.format("Distance: %.1f", distance)
+            billboard.Parent = hrp
+        end
+    end
+end
+
+function UpdateChildrenESP(enabled, color, transparency)
+    local characters = workspace:FindFirstChild("Characters")
+    if not characters then return end
+
+    for _, childName in ipairs(kidNames) do
+        local model = characters:FindFirstChild(childName)
+        if model and model:IsA("Model") then
+            if enabled then
+                ApplyESP(model, color, transparency)
+            else
+                if model:FindFirstChild("ESPHighlight") then
+                    model.ESPHighlight:Destroy()
+                end
+                local hrp = model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart
+                if hrp and hrp:FindFirstChild("DistanceGui") then
+                    hrp.DistanceGui:Destroy()
+                end
+            end
+        end
+    end
+end
+
+    -- React to colorpicker changes
+    ChildrenESPColor:OnChanged(function(color)
+        if Options.ChildrenESP.Value then
+            UpdateChildrenESP(true, color, ChildrenESPColor.Transparency)
+        end
+    end)
+end
+
+    -----------------------------------------------------------------
+    -- ======================= Settings Tab =========================
+    -----------------------------------------------------------------
+    SaveManager:SetLibrary(Fluent)
+    InterfaceManager:SetLibrary(Fluent)
+    SaveManager:IgnoreThemeSettings()
+    SaveManager:SetIgnoreIndexes({})
+    InterfaceManager:SetFolder("FluentScriptHub")
+    SaveManager:SetFolder("FluentScriptHub/specific-game")
+    InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+    SaveManager:BuildConfigSection(Tabs.Settings)
+end
+
+-- Verify Key
+VerifyBtn.MouseButton1Click:Connect(function()
+    if KeyBox.Text == correctKey then
+        VerifyBtn.Text = "✅ Verified!"
+        VerifyBtn.BackgroundColor3 = Color3.fromRGB(40, 170, 110)
+        task.wait(0.6)
+
+        ScreenGui:Destroy() -- CLOSE KEY GUI
+        loadMainScript() -- RUN HUB
+    else
+        VerifyBtn.Text = "❌ Invalid Key"
+        VerifyBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+        task.wait(1.2)
+        VerifyBtn.Text = "🔑 Verify Key"
+        VerifyBtn.BackgroundColor3 = Color3.fromRGB(60, 140, 255)
+    end
+end)
