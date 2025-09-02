@@ -1061,7 +1061,7 @@ for groupName, items in pairs(itemGroups) do
     })
 end
 
--- ===================== TELEPORT LOGIC (all categories) =====================
+-- ===================== TELEPORT & CONSTRAINT HANDLING LOGIC =====================
 local function getRoot()
     local p = game.Players.LocalPlayer
     return p and p.Character and p.Character:FindFirstChild("HumanoidRootPart")
@@ -1086,9 +1086,31 @@ local function unlockItem(item)
     return false
 end
 
+-- Check if item has WeldConstraints or is otherwise locked
+local function isLockedByConstraint(item)
+    for _, descendant in ipairs(item:GetDescendants()) do
+        if descendant:IsA("WeldConstraint") or descendant:IsA("ManualWeld") or descendant:IsA("Motor6D") then
+            return true
+        end
+    end
+    return false
+end
+
+-- Wait for the item to become unlocked (constraint removed), with timeout (e.g., 3 seconds)
+local function waitForUnlock(item, timeout)
+    local start = tick()
+    while isLockedByConstraint(item) do
+        if tick() - start > timeout then
+            return false -- Timed out
+        end
+        task.wait(0.05)
+    end
+    return true
+end
+
 BringStuffTab:AddButton({
     Title = "Bring All Selected Items",
-    Description = "Bring all selected items from all categories",
+    Description = "Bring all selected items from all categories (handles locked constraints)",
     Callback = function()
         local root = getRoot()
         if not root then
@@ -1106,13 +1128,25 @@ BringStuffTab:AddButton({
             return
         end
 
-        local count, failed = 0, 0
+        local count, failed, locked = 0, 0, 0
         for group, selected in pairs(selectedTeleportItems) do
             for _, wanted in ipairs(selected or {}) do
                 for _, obj in ipairs(itemsFolder:GetChildren()) do
                     if obj.Name == wanted and isWithinRange(obj, root, bringRange) then
+                        -- Step 1: Request unlock (pickup) via remote
                         local unlocked = unlockItem(obj)
-                        task.wait(0.25)
+
+                        -- Step 2: Wait for Welds/constraints to be removed by game logic (max 3s)
+                        local unlockedNow = waitForUnlock(obj, 3)
+                        if not unlockedNow then
+                            locked = locked + 1
+                            if Fluent and Fluent.Notify then
+                                Fluent:Notify({Title="Bring Failed", Content=obj.Name.." stayed locked (constraint not released).", Duration=2})
+                            end
+                            continue
+                        end
+
+                        -- Step 3: Teleport (drag) the item
                         local part = getItemPart(obj)
                         if part and not part.Anchored then
                             obj:SetPrimaryPartCFrame(root.CFrame + Vector3.new(math.random(-4, 4), 2, math.random(-4, 4)))
@@ -1128,8 +1162,11 @@ BringStuffTab:AddButton({
         if Fluent and Fluent.Notify then
             Fluent:Notify({
                 Title = "Teleport Items",
-                Content = string.format("Teleported %d item(s), skipped %d (locked, out of range, or failed)", count, failed),
-                Duration = 4
+                Content = string.format(
+                    "Teleported %d item(s), skipped %d (anchored/failed), %d locked (constraint not released)", 
+                    count, failed, locked
+                ),
+                Duration = 5
             })
         end
     end
