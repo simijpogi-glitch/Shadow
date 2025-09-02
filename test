@@ -969,13 +969,52 @@ Tabs.AutoBandage:AddToggle("Gluttony_Enabled", {
 -----------------------------------------------------------------
 -- ======================= Exploit Bring Stuff Tab ======================
 -----------------------------------------------------------------
--- Bring Items Script with Multi-Select Fluent UI and adjustable bring range
+-- Bring Items Script with Multi-Select Fluent UI and fixed bring range (300, no slider)
+-- Improved: Items are brought one by one, with smooth waits and no model destruction
 
--- ===================== CONFIGURABLE ITEMS LIST =====================
-local teleportableItems = {
-    "Cake", "Carrot", "Apple", "Berry", "Morsel", "Steak", "Stew",
-    "Bandage", "MedKit", "Chili", "Hearty Stew", "Meat", "Sandwhich",
-    "Corn", "Pumpkin", "Ribs"
+-- ===================== CONFIGURABLE SECTIONS =====================
+local bringSections = {
+    {
+        Name = "FOODS",
+        DropdownTitle = "Foods",
+        Items = {
+            "Cake", "Carrot", "Apple", "Berry", "Morsel", "Steak", "Stew",
+            "Bandage", "MedKit", "Chili", "Hearty Stew", "Meat", "Sandwhich",
+            "Corn", "Pumpkin", "Ribs"
+        }
+    },
+    {
+        Name = "FUEL",
+        DropdownTitle = "Fuel",
+        Items = {
+            "Log", "Chair", "Biofuel", "Coal", "Fuel Canister", "Oil Barrel"
+        }
+    },
+    {
+        Name = "MATERIALS",
+        DropdownTitle = "Gear",
+        Items = {
+            "Bolt", "Sheet Metal", "UFO Junk", "UFO Component", "Broken Fan",
+            "Old Radio", "Broken Microwave", "Tyre", "Metal Chair", "Old Car Engine",
+            "Washing Machine", "Cultist Experiment", "Cultist Prototype", "UFO Scrap"
+        }
+    },
+    {
+        Name = "RESOURCES",
+        DropdownTitle = "Tools",
+        Items = {
+            "Bunny Foot", "Wolf Pelt", "Alpha Wolf Pelt", "Bear Pelt", "Arctic Fox Pelt",
+            "Polar Bear Pelt", "Mammoth Tusk"
+        }
+    },
+    {
+        Name = "ARMOR/SWORD",
+        DropdownTitle = "Armor/Sword",
+        Items = {
+            "Leather Body", "Iron Body", "Thorn Body", "Alien Armor", "Riot Shield", "Poison Armor",
+            "Spear", "Morningstar", "Katana", "Laser Sword", "Ice Sword", "Trident", "Poison Spear"
+        }
+    }
 }
 
 -- ===================== UI SETUP =====================
@@ -984,86 +1023,36 @@ if not BringStuffTab then
     warn("BringStuffTab not found! Make sure Tabs.BringStuff exists before loading this script.")
     return
 end
+local sectionSelections = {}
+local BRING_RANGE = 300 -- Fixed range, no slider
 
-local selectedTeleportItems = {}
-local bringRange = 100
-
-BringStuffTab:AddSection("FOODS")
-
-BringStuffTab:AddSlider("BringRangeSlider", {
-    Title = "Bring Range",
-    Description = "Max distance to bring items",
-    Default = 100,
-    Min = 50,
-    Max = 300,
-    Rounding = 0,
-    Callback = function(val)
-        bringRange = val
-        if Fluent and Fluent.Notify then
-            Fluent:Notify({Title="Bring Range", Content="Set bring range to "..val, Duration=2})
-        end
-    end
-})
-
-BringStuffTab:AddDropdown("TeleportItemsDropdown", {
-    Title = "Foods",
-    Values = teleportableItems,
-    Multi = true,
-    Default = {},
-    Callback = function(selected)
-        selectedTeleportItems = selected
-        if Fluent and Fluent.Notify then
-            Fluent:Notify({Title="Teleport Selection", Content="Selected: "..table.concat(selected, ", "), Duration=2})
-        end
-    end
-})
-
-BringStuffTab:AddButton({
-    Title = "Select All",
-    Description = "Select all teleportable items",
-    Callback = function()
-        selectedTeleportItems = {}
-        for _, item in ipairs(teleportableItems) do
-            table.insert(selectedTeleportItems, item)
-        end
-        if Fluent and Fluent.Notify then
-            Fluent:Notify({Title="Select All", Content="All items selected for teleport.", Duration=2})
-        end
-    end
-})
-
-BringStuffTab:AddButton({
-    Title = "Deselect All",
-    Description = "Clear teleport selection",
-    Callback = function()
-        selectedTeleportItems = {}
-        if Fluent and Fluent.Notify then
-            Fluent:Notify({Title="Deselect All", Content="All teleport selections cleared.", Duration=2})
-        end
-    end
-})
-
--- ===================== TELEPORT LOGIC =====================
+-- ===================== HELPERS =====================
 local function getRoot()
     local p = game.Players.LocalPlayer
     return p and p.Character and p.Character:FindFirstChild("HumanoidRootPart")
 end
 
--- Helper to get an item's primary part
 local function getItemPart(obj)
-    return obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
+    if obj:IsA("Model") then
+        return obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+    end
+    return obj
 end
 
--- Checks if item is within bring range
 local function isWithinRange(obj, root, range)
     local part = getItemPart(obj)
     return part and (part.Position - root.Position).Magnitude <= range
 end
 
--- Fires the pickup remote event to unlock the item for teleport
-local function unlockItem(item)
-    local pickupRemote = game:GetService("ReplicatedStorage"):FindFirstChild("RemoteEvents") and
-        game:GetService("ReplicatedStorage").RemoteEvents:FindFirstChild("RequestStartDraggingItem")
+local function forceUnanchorOne(part)
+    if part and part:IsA("BasePart") and part.Anchored then
+        pcall(function() part.Anchored = false end)
+    end
+end
+
+local function tryPickupRemote(item)
+    local pickupRemote = game:GetService("ReplicatedStorage"):FindFirstChild("RemoteEvents")
+        and game:GetService("ReplicatedStorage").RemoteEvents:FindFirstChild("RequestStartDraggingItem")
     if pickupRemote then
         pickupRemote:FireServer(item)
         return true
@@ -1071,690 +1060,133 @@ local function unlockItem(item)
     return false
 end
 
-BringStuffTab:AddButton({
-    Title = "Teleport Selected Items",
-    Description = "Teleport all selected items to you (uses game pickup logic and range)",
-    Callback = function()
-        local root = getRoot()
-        if not root then
-            if Fluent and Fluent.Notify then
-                Fluent:Notify({Title="Teleport Items", Content="Player not ready.", Duration=3})
-            end
-            return
-        end
-        if #selectedTeleportItems == 0 then
-            if Fluent and Fluent.Notify then
-                Fluent:Notify({Title="Teleport Items", Content="No items selected!", Duration=3})
-            end
-            return
-        end
-
-        local itemsFolder = workspace:FindFirstChild("Items")
-        if not itemsFolder then
-            if Fluent and Fluent.Notify then
-                Fluent:Notify({Title="Teleport Items", Content="Items folder missing.", Duration=3})
-            end
-            return
-        end
-
-        local count, failed = 0, 0
-
-        for _, wanted in ipairs(selectedTeleportItems) do
-            for _, obj in ipairs(itemsFolder:GetChildren()) do
-                if obj.Name == wanted and isWithinRange(obj, root, bringRange) then
-                    -- Step 1: Try to unlock (pickup) via remote
-                    local unlocked = unlockItem(obj)
-                    task.wait(0.25) -- Wait for the server to process pickup
-
-                    -- Step 2: Try to teleport if not anchored/constrained
-                    local part = getItemPart(obj)
-                    if part and not part.Anchored then
-                        obj:SetPrimaryPartCFrame(root.CFrame + Vector3.new(math.random(-4,4), 2, math.random(-4,4)))
-                        count = count + 1
-                    else
-                        failed = failed + 1
-                    end
-                end
-            end
-        end
-
-        if Fluent and Fluent.Notify then
-            Fluent:Notify({
-                Title = "Teleport Items",
-                Content = string.format("Teleported %d item(s), skipped %d (locked, out of range, or failed)", count, failed),
-                Duration = 4
-            })
-        end
-    end
-})
--- Bring Items Script with Multi-Select Fluent UI and adjustable bring range
-
--- ===================== CONFIGURABLE ITEMS LIST =====================
-local teleportableItems = {
-    "Log", "Chair", "Biofuel", "Coal", "Fuel Canister", "Oil Barrel"
-}
-
--- ===================== UI SETUP =====================
-local BringStuffTab = Tabs and Tabs.BringStuff or nil
-if not BringStuffTab then
-    warn("BringStuffTab not found! Make sure Tabs.BringStuff exists before loading this script.")
-    return
-end
-
-local selectedTeleportItems = {}
-local bringRange = 100
-
-BringStuffTab:AddSection("FUEL")
-
-BringStuffTab:AddSlider("BringRangeSlider", {
-    Title = "Bring Range",
-    Description = "Max distance to bring items",
-    Default = 100,
-    Min = 50,
-    Max = 300,
-    Rounding = 0,
-    Callback = function(val)
-        bringRange = val
-        if Fluent and Fluent.Notify then
-            Fluent:Notify({Title="Bring Range", Content="Set bring range to "..val, Duration=2})
-        end
-    end
-})
-
-BringStuffTab:AddDropdown("TeleportItemsDropdown", {
-    Title = "Fuel",
-    Values = teleportableItems,
-    Multi = true,
-    Default = {},
-    Callback = function(selected)
-        selectedTeleportItems = selected
-        if Fluent and Fluent.Notify then
-            Fluent:Notify({Title="Teleport Selection", Content="Selected: "..table.concat(selected, ", "), Duration=2})
-        end
-    end
-})
-
-BringStuffTab:AddButton({
-    Title = "Select All",
-    Description = "Select all teleportable items",
-    Callback = function()
-        selectedTeleportItems = {}
-        for _, item in ipairs(teleportableItems) do
-            table.insert(selectedTeleportItems, item)
-        end
-        if Fluent and Fluent.Notify then
-            Fluent:Notify({Title="Select All", Content="All items selected for teleport.", Duration=2})
-        end
-    end
-})
-
-BringStuffTab:AddButton({
-    Title = "Deselect All",
-    Description = "Clear teleport selection",
-    Callback = function()
-        selectedTeleportItems = {}
-        if Fluent and Fluent.Notify then
-            Fluent:Notify({Title="Deselect All", Content="All teleport selections cleared.", Duration=2})
-        end
-    end
-})
-
--- ===================== TELEPORT LOGIC =====================
-local function getRoot()
-    local p = game.Players.LocalPlayer
-    return p and p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-end
-
--- Helper to get an item's primary part
-local function getItemPart(obj)
-    return obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
-end
-
--- Checks if item is within bring range
-local function isWithinRange(obj, root, range)
+local function bringOneItemSmooth(obj, rootCFrame)
+    -- 1. Fire pickup remote (if available)
+    tryPickupRemote(obj)
+    -- 2. Wait a bit for the server to process drag
+    task.wait(0.18)
+    -- 3. Try to unanchor the primary/base part (do not touch internal welds/constraints)
     local part = getItemPart(obj)
-    return part and (part.Position - root.Position).Magnitude <= range
-end
-
--- Fires the pickup remote event to unlock the item for teleport
-local function unlockItem(item)
-    local pickupRemote = game:GetService("ReplicatedStorage"):FindFirstChild("RemoteEvents") and
-        game:GetService("ReplicatedStorage").RemoteEvents:FindFirstChild("RequestStartDraggingItem")
-    if pickupRemote then
-        pickupRemote:FireServer(item)
+    forceUnanchorOne(part)
+    -- 4. Try to move with SetPrimaryPartCFrame or CFrame (if not anchored)
+    if part and not part.Anchored then
+        if obj:IsA("Model") and obj.PrimaryPart then
+            obj:SetPrimaryPartCFrame(rootCFrame + Vector3.new(math.random(-4,4),2,math.random(-4,4)))
+        elseif part:IsA("BasePart") then
+            part.CFrame = rootCFrame + Vector3.new(math.random(-4,4),2,math.random(-4,4))
+        end
         return true
     end
     return false
 end
 
-BringStuffTab:AddButton({
-    Title = "Teleport Selected Items",
-    Description = "Teleport all selected items to you (uses game pickup logic and range)",
-    Callback = function()
-        local root = getRoot()
-        if not root then
-            if Fluent and Fluent.Notify then
-                Fluent:Notify({Title="Teleport Items", Content="Player not ready.", Duration=3})
-            end
-            return
+local function bringSelectedItemsSerialSmooth(selectedItems)
+    local root = getRoot()
+    if not root then
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({Title="Teleport Items", Content="Player not ready.", Duration=3})
         end
-        if #selectedTeleportItems == 0 then
-            if Fluent and Fluent.Notify then
-                Fluent:Notify({Title="Teleport Items", Content="No items selected!", Duration=3})
-            end
-            return
+        return
+    end
+    if #selectedItems == 0 then
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({Title="Teleport Items", Content="No items selected!", Duration=3})
         end
-
-        local itemsFolder = workspace:FindFirstChild("Items")
-        if not itemsFolder then
-            if Fluent and Fluent.Notify then
-                Fluent:Notify({Title="Teleport Items", Content="Items folder missing.", Duration=3})
-            end
-            return
+        return
+    end
+    local itemsFolder = workspace:FindFirstChild("Items")
+    if not itemsFolder then
+        if Fluent and Fluent.Notify then
+            Fluent:Notify({Title="Teleport Items", Content="Items folder missing.", Duration=3})
         end
-
-        local count, failed = 0, 0
-
-        for _, wanted in ipairs(selectedTeleportItems) do
-            for _, obj in ipairs(itemsFolder:GetChildren()) do
-                if obj.Name == wanted and isWithinRange(obj, root, bringRange) then
-                    -- Step 1: Try to unlock (pickup) via remote
-                    local unlocked = unlockItem(obj)
-                    task.wait(0.25) -- Wait for the server to process pickup
-
-                    -- Step 2: Try to teleport if not anchored/constrained
-                    local part = getItemPart(obj)
-                    if part and not part.Anchored then
-                        obj:SetPrimaryPartCFrame(root.CFrame + Vector3.new(math.random(-4,4), 2, math.random(-4,4)))
-                        count = count + 1
-                    else
-                        failed = failed + 1
-                    end
+        return
+    end
+    local count, failed = 0, 0
+    for _, wanted in ipairs(selectedItems) do
+        for _, obj in ipairs(itemsFolder:GetChildren()) do
+            if obj.Name == wanted and isWithinRange(obj, root, BRING_RANGE) then
+                local ok = bringOneItemSmooth(obj, root.CFrame)
+                if ok then
+                    count = count + 1
+                else
+                    failed = failed + 1
                 end
+                task.wait(0.35) -- Per-item wait for smoothness and server sync
             end
         end
-
-        if Fluent and Fluent.Notify then
-            Fluent:Notify({
-                Title = "Teleport Items",
-                Content = string.format("Teleported %d item(s), skipped %d (locked, out of range, or failed)", count, failed),
-                Duration = 4
-            })
-        end
     end
-})
--- Bring Items Script with Multi-Select Fluent UI and adjustable bring range
-
--- ===================== CONFIGURABLE ITEMS LIST =====================
-local teleportableItems = {
-    "Bolt", "Sheet Metal", "UFO Junk", "UFO Component", "Broken Fan",
-    "Old Radio", "Broken Microwave", "Tyre", "Metal Chair", "Old Car Engine",
-    "Washing Machine", "Cultist Experiment", "Cultist Prototype", "UFO Scrap"
-}
-
--- ===================== UI SETUP =====================
-local BringStuffTab = Tabs and Tabs.BringStuff or nil
-if not BringStuffTab then
-    warn("BringStuffTab not found! Make sure Tabs.BringStuff exists before loading this script.")
-    return
+    if Fluent and Fluent.Notify then
+        Fluent:Notify({
+            Title = "Teleport Items",
+            Content = string.format("Teleported %d item(s), skipped %d (locked, out of range, or failed)", count, failed),
+            Duration = 4
+        })
+    end
 end
 
-local selectedTeleportItems = {}
-local bringRange = 100
+-- ===================== UI GENERATION LOOP =====================
+for _, section in ipairs(bringSections) do
+    BringStuffTab:AddSection(section.Name)
+    local sectionKey = "section_"..section.Name
+    sectionSelections[sectionKey] = {}
 
-BringStuffTab:AddSection("MATERIALS")
-
-BringStuffTab:AddSlider("BringRangeSlider", {
-    Title = "Bring Range",
-    Description = "Max distance to bring items",
-    Default = 100,
-    Min = 50,
-    Max = 300,
-    Rounding = 0,
-    Callback = function(val)
-        bringRange = val
-        if Fluent and Fluent.Notify then
-            Fluent:Notify({Title="Bring Range", Content="Set bring range to "..val, Duration=2})
-        end
-    end
-})
-
-BringStuffTab:AddDropdown("TeleportItemsDropdown", {
-    Title = "Gear",
-    Values = teleportableItems,
-    Multi = true,
-    Default = {},
-    Callback = function(selected)
-        selectedTeleportItems = selected
-        if Fluent and Fluent.Notify then
-            Fluent:Notify({Title="Teleport Selection", Content="Selected: "..table.concat(selected, ", "), Duration=2})
-        end
-    end
-})
-
-BringStuffTab:AddButton({
-    Title = "Select All",
-    Description = "Select all teleportable items",
-    Callback = function()
-        selectedTeleportItems = {}
-        for _, item in ipairs(teleportableItems) do
-            table.insert(selectedTeleportItems, item)
-        end
-        if Fluent and Fluent.Notify then
-            Fluent:Notify({Title="Select All", Content="All items selected for teleport.", Duration=2})
-        end
-    end
-})
-
-BringStuffTab:AddButton({
-    Title = "Deselect All",
-    Description = "Clear teleport selection",
-    Callback = function()
-        selectedTeleportItems = {}
-        if Fluent and Fluent.Notify then
-            Fluent:Notify({Title="Deselect All", Content="All teleport selections cleared.", Duration=2})
-        end
-    end
-})
-
--- ===================== TELEPORT LOGIC =====================
-local function getRoot()
-    local p = game.Players.LocalPlayer
-    return p and p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-end
-
--- Helper to get an item's primary part
-local function getItemPart(obj)
-    return obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
-end
-
--- Checks if item is within bring range
-local function isWithinRange(obj, root, range)
-    local part = getItemPart(obj)
-    return part and (part.Position - root.Position).Magnitude <= range
-end
-
--- Fires the pickup remote event to unlock the item for teleport
-local function unlockItem(item)
-    local pickupRemote = game:GetService("ReplicatedStorage"):FindFirstChild("RemoteEvents") and
-        game:GetService("ReplicatedStorage").RemoteEvents:FindFirstChild("RequestStartDraggingItem")
-    if pickupRemote then
-        pickupRemote:FireServer(item)
-        return true
-    end
-    return false
-end
-
-BringStuffTab:AddButton({
-    Title = "Teleport Selected Items",
-    Description = "Teleport all selected items to you (uses game pickup logic and range)",
-    Callback = function()
-        local root = getRoot()
-        if not root then
+    BringStuffTab:AddDropdown("Dropdown_"..sectionKey, {
+        Title = section.DropdownTitle,
+        Values = section.Items,
+        Multi = true,
+        Default = {},
+        Callback = function(selected)
+            sectionSelections[sectionKey] = {}
+            for _, v in ipairs(selected) do
+                table.insert(sectionSelections[sectionKey], v)
+            end
             if Fluent and Fluent.Notify then
-                Fluent:Notify({Title="Teleport Items", Content="Player not ready.", Duration=3})
+                Fluent:Notify({Title="Teleport Selection", Content="Selected: "..table.concat(sectionSelections[sectionKey], ", "), Duration=2})
             end
-            return
         end
-        if #selectedTeleportItems == 0 then
+    })
+
+    BringStuffTab:AddButton({
+        Title = "Select All "..section.DropdownTitle,
+        Description = "Select all "..section.DropdownTitle.." items",
+        Callback = function()
+            sectionSelections[sectionKey] = {}
+            for _, item in ipairs(section.Items) do
+                table.insert(sectionSelections[sectionKey], item)
+            end
+            if Options and Options["Dropdown_"..sectionKey] and Options["Dropdown_"..sectionKey].SetValue then
+                Options["Dropdown_"..sectionKey]:SetValue(sectionSelections[sectionKey])
+            end
             if Fluent and Fluent.Notify then
-                Fluent:Notify({Title="Teleport Items", Content="No items selected!", Duration=3})
+                Fluent:Notify({Title="Select All", Content="All items selected for teleport.", Duration=2})
             end
-            return
         end
+    })
 
-        local itemsFolder = workspace:FindFirstChild("Items")
-        if not itemsFolder then
+    BringStuffTab:AddButton({
+        Title = "Deselect All "..section.DropdownTitle,
+        Description = "Clear selection in this section",
+        Callback = function()
+            sectionSelections[sectionKey] = {}
+            if Options and Options["Dropdown_"..sectionKey] and Options["Dropdown_"..sectionKey].SetValue then
+                Options["Dropdown_"..sectionKey]:SetValue({})
+            end
             if Fluent and Fluent.Notify then
-                Fluent:Notify({Title="Teleport Items", Content="Items folder missing.", Duration=3})
-            end
-            return
-        end
-
-        local count, failed = 0, 0
-
-        for _, wanted in ipairs(selectedTeleportItems) do
-            for _, obj in ipairs(itemsFolder:GetChildren()) do
-                if obj.Name == wanted and isWithinRange(obj, root, bringRange) then
-                    -- Step 1: Try to unlock (pickup) via remote
-                    local unlocked = unlockItem(obj)
-                    task.wait(0.25) -- Wait for the server to process pickup
-
-                    -- Step 2: Try to teleport if not anchored/constrained
-                    local part = getItemPart(obj)
-                    if part and not part.Anchored then
-                        obj:SetPrimaryPartCFrame(root.CFrame + Vector3.new(math.random(-4,4), 2, math.random(-4,4)))
-                        count = count + 1
-                    else
-                        failed = failed + 1
-                    end
-                end
+                Fluent:Notify({Title="Deselect All", Content="All teleport selections cleared.", Duration=2})
             end
         end
+    })
 
-        if Fluent and Fluent.Notify then
-            Fluent:Notify({
-                Title = "Teleport Items",
-                Content = string.format("Teleported %d item(s), skipped %d (locked, out of range, or failed)", count, failed),
-                Duration = 4
-            })
+    BringStuffTab:AddButton({
+        Title = "Bring Selected "..section.DropdownTitle,
+        Description = "Bring all selected items from this section (smooth, one by one)",
+        Callback = function()
+            bringSelectedItemsSerialSmooth(sectionSelections[sectionKey])
         end
-    end
-})
--- Bring Items Script with Multi-Select Fluent UI and adjustable bring range
-
--- ===================== CONFIGURABLE ITEMS LIST =====================
-local teleportableItems = {
-    "Bunny Foot", "Wolf Pelt", "Alpha Wolf Pelt", "Bear Pelt", "Arctic Fox Pelt",
-    "Polar Bear Pelt", "Mammoth Tusk"
-}
-
--- ===================== UI SETUP =====================
-local BringStuffTab = Tabs and Tabs.BringStuff or nil
-if not BringStuffTab then
-    warn("BringStuffTab not found! Make sure Tabs.BringStuff exists before loading this script.")
-    return
+    })
 end
 
-local selectedTeleportItems = {}
-local bringRange = 100
-
-BringStuffTab:AddSection("Teleport Resource Items (Fluent Multi-Select)")
-
-BringStuffTab:AddSlider("BringRangeSlider", {
-    Title = "Bring Range",
-    Description = "Max distance to bring items",
-    Default = 100,
-    Min = 50,
-    Max = 300,
-    Rounding = 0,
-    Callback = function(val)
-        bringRange = val
-        if Fluent and Fluent.Notify then
-            Fluent:Notify({Title="Bring Range", Content="Set bring range to "..val, Duration=2})
-        end
-    end
-})
-
-BringStuffTab:AddDropdown("TeleportItemsDropdown", {
-    Title = "Tools",
-    Values = teleportableItems,
-    Multi = true,
-    Default = {},
-    Callback = function(selected)
-        selectedTeleportItems = selected
-        if Fluent and Fluent.Notify then
-            Fluent:Notify({Title="Teleport Selection", Content="Selected: "..table.concat(selected, ", "), Duration=2})
-        end
-    end
-})
-
-BringStuffTab:AddButton({
-    Title = "Select All",
-    Description = "Bring Selected Items",
-    Callback = function()
-        selectedTeleportItems = {}
-        for _, item in ipairs(teleportableItems) do
-            table.insert(selectedTeleportItems, item)
-        end
-        if Fluent and Fluent.Notify then
-            Fluent:Notify({Title="Select All", Content="All items selected for teleport.", Duration=2})
-        end
-    end
-})
-
-BringStuffTab:AddButton({
-    Title = "Deselect All",
-    Description = "Clear teleport selection",
-    Callback = function()
-        selectedTeleportItems = {}
-        if Fluent and Fluent.Notify then
-            Fluent:Notify({Title="Deselect All", Content="All teleport selections cleared.", Duration=2})
-        end
-    end
-})
-
--- ===================== TELEPORT LOGIC =====================
-local function getRoot()
-    local p = game.Players.LocalPlayer
-    return p and p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-end
-
--- Helper to get an item's primary part
-local function getItemPart(obj)
-    return obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
-end
-
--- Checks if item is within bring range
-local function isWithinRange(obj, root, range)
-    local part = getItemPart(obj)
-    return part and (part.Position - root.Position).Magnitude <= range
-end
-
--- Fires the pickup remote event to unlock the item for teleport
-local function unlockItem(item)
-    local pickupRemote = game:GetService("ReplicatedStorage"):FindFirstChild("RemoteEvents") and
-        game:GetService("ReplicatedStorage").RemoteEvents:FindFirstChild("RequestStartDraggingItem")
-    if pickupRemote then
-        pickupRemote:FireServer(item)
-        return true
-    end
-    return false
-end
-
-BringStuffTab:AddButton({
-    Title = "Bring Selected Items",
-    Description = "Bring all selected Items",
-    Callback = function()
-        local root = getRoot()
-        if not root then
-            if Fluent and Fluent.Notify then
-                Fluent:Notify({Title="Teleport Items", Content="Player not ready.", Duration=3})
-            end
-            return
-        end
-        if #selectedTeleportItems == 0 then
-            if Fluent and Fluent.Notify then
-                Fluent:Notify({Title="Teleport Items", Content="No items selected!", Duration=3})
-            end
-            return
-        end
-
-        local itemsFolder = workspace:FindFirstChild("Items")
-        if not itemsFolder then
-            if Fluent and Fluent.Notify then
-                Fluent:Notify({Title="Teleport Items", Content="Items folder missing.", Duration=3})
-            end
-            return
-        end
-
-        local count, failed = 0, 0
-
-        for _, wanted in ipairs(selectedTeleportItems) do
-            for _, obj in ipairs(itemsFolder:GetChildren()) do
-                if obj.Name == wanted and isWithinRange(obj, root, bringRange) then
-                    -- Step 1: Try to unlock (pickup) via remote
-                    local unlocked = unlockItem(obj)
-                    task.wait(0.25) -- Wait for the server to process pickup
-
-                    -- Step 2: Try to teleport if not anchored/constrained
-                    local part = getItemPart(obj)
-                    if part and not part.Anchored then
-                        obj:SetPrimaryPartCFrame(root.CFrame + Vector3.new(math.random(-4,4), 2, math.random(-4,4)))
-                        count = count + 1
-                    else
-                        failed = failed + 1
-                    end
-                end
-            end
-        end
-
-        if Fluent and Fluent.Notify then
-            Fluent:Notify({
-                Title = "Teleport Items",
-                Content = string.format("Teleported %d item(s), skipped %d (locked, out of range, or failed)", count, failed),
-                Duration = 4
-            })
-        end
-    end
-})
--- Bring Items Script with Multi-Select Fluent UI and adjustable bring range
-
--- ===================== CONFIGURABLE ITEMS LIST =====================
-local teleportableItems = {
-    "Leather Body", "Iron Body", "Thorn Body", "Alien Armor", "Riot Shield", "Poison Armor",
-    "Spear", "Morningstar", "Katana", "Laser Sword", "Ice Sword", "Trident", "Poison Spear"
-}
-
--- ===================== UI SETUP =====================
-local BringStuffTab = Tabs and Tabs.BringStuff or nil
-if not BringStuffTab then
-    warn("BringStuffTab not found! Make sure Tabs.BringStuff exists before loading this script.")
-    return
-end
-
-local selectedTeleportItems = {}
-local bringRange = 100
-
-BringStuffTab:AddSection("ARMOR/SWORD")
-
-BringStuffTab:AddSlider("BringRangeSlider", {
-    Title = "Bring Range",
-    Description = "Max distance to bring items",
-    Default = 100,
-    Min = 50,
-    Max = 300,
-    Rounding = 0,
-    Callback = function(val)
-        bringRange = val
-        if Fluent and Fluent.Notify then
-            Fluent:Notify({Title="Bring Range", Content="Set bring range to "..val, Duration=2})
-        end
-    end
-})
-
-BringStuffTab:AddDropdown("TeleportItemsDropdown", {
-    Title = "Armor/Sword",
-    Values = teleportableItems,
-    Multi = true,
-    Default = {},
-    Callback = function(selected)
-        selectedTeleportItems = selected
-        if Fluent and Fluent.Notify then
-            Fluent:Notify({Title="Teleport Selection", Content="Selected: "..table.concat(selected, ", "), Duration=2})
-        end
-    end
-})
-
-BringStuffTab:AddButton({
-    Title = "Select All",
-    Description = "Select all items!",
-    Callback = function()
-        selectedTeleportItems = {}
-        for _, item in ipairs(teleportableItems) do
-            table.insert(selectedTeleportItems, item)
-        end
-        if Fluent and Fluent.Notify then
-            Fluent:Notify({Title="Select All", Content="All items selected for teleport.", Duration=2})
-        end
-    end
-})
-
-BringStuffTab:AddButton({
-    Title = "Deselect All",
-    Description = "Clear Bring selection",
-    Callback = function()
-        selectedTeleportItems = {}
-        if Fluent and Fluent.Notify then
-            Fluent:Notify({Title="Deselect All", Content="All teleport selections cleared.", Duration=2})
-        end
-    end
-})
-
--- ===================== TELEPORT LOGIC =====================
-local function getRoot()
-    local p = game.Players.LocalPlayer
-    return p and p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-end
-
--- Helper to get an item's primary part
-local function getItemPart(obj)
-    return obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
-end
-
--- Checks if item is within bring range
-local function isWithinRange(obj, root, range)
-    local part = getItemPart(obj)
-    return part and (part.Position - root.Position).Magnitude <= range
-end
-
--- Fires the pickup remote event to unlock the item for teleport
-local function unlockItem(item)
-    local pickupRemote = game:GetService("ReplicatedStorage"):FindFirstChild("RemoteEvents") and
-        game:GetService("ReplicatedStorage").RemoteEvents:FindFirstChild("RequestStartDraggingItem")
-    if pickupRemote then
-        pickupRemote:FireServer(item)
-        return true
-    end
-    return false
-end
-
-BringStuffTab:AddButton({
-    Title = "Bring Selected Items",
-    Description = "Bring Selected Items to you",
-    Callback = function()
-        local root = getRoot()
-        if not root then
-            if Fluent and Fluent.Notify then
-                Fluent:Notify({Title="Teleport Items", Content="Player not ready.", Duration=3})
-            end
-            return
-        end
-        if #selectedTeleportItems == 0 then
-            if Fluent and Fluent.Notify then
-                Fluent:Notify({Title="Teleport Items", Content="No items selected!", Duration=3})
-            end
-            return
-        end
-
-        local itemsFolder = workspace:FindFirstChild("Items")
-        if not itemsFolder then
-            if Fluent and Fluent.Notify then
-                Fluent:Notify({Title="Teleport Items", Content="Items folder missing.", Duration=3})
-            end
-            return
-        end
-
-        local count, failed = 0, 0
-
-        for _, wanted in ipairs(selectedTeleportItems) do
-            for _, obj in ipairs(itemsFolder:GetChildren()) do
-                if obj.Name == wanted and isWithinRange(obj, root, bringRange) then
-                    -- Step 1: Try to unlock (pickup) via remote
-                    local unlocked = unlockItem(obj)
-                    task.wait(0.25) -- Wait for the server to process pickup
-
-                    -- Step 2: Try to teleport if not anchored/constrained
-                    local part = getItemPart(obj)
-                    if part and not part.Anchored then
-                        obj:SetPrimaryPartCFrame(root.CFrame + Vector3.new(math.random(-4,4), 2, math.random(-4,4)))
-                        count = count + 1
-                    else
-                        failed = failed + 1
-                    end
-                end
-            end
-        end
-
-        if Fluent and Fluent.Notify then
-            Fluent:Notify({
-                Title = "Teleport Items",
-                Content = string.format("Teleported %d item(s), skipped %d (locked, out of range, or failed)", count, failed),
-                Duration = 4
-            })
-        end
-    end
-})
+-- ===================== END OF SCRIPT =====================
 
 
 -----------------------------------------------------------------
