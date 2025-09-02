@@ -1068,7 +1068,15 @@ local function getRoot()
 end
 
 local function getItemPart(obj)
-    return obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
+    if obj:IsA("Model") then
+        if obj.PrimaryPart then return obj.PrimaryPart end
+        for _, v in ipairs(obj:GetChildren()) do
+            if v:IsA("BasePart") then return v end
+        end
+    elseif obj:IsA("BasePart") then
+        return obj
+    end
+    return nil
 end
 
 local function isWithinRange(obj, root, range)
@@ -1086,31 +1094,46 @@ local function unlockItem(item)
     return false
 end
 
--- Check if item has WeldConstraints or is otherwise locked
-local function isLockedByConstraint(item)
-    for _, descendant in ipairs(item:GetDescendants()) do
-        if descendant:IsA("WeldConstraint") or descendant:IsA("ManualWeld") or descendant:IsA("Motor6D") then
+local function hasLockingConstraint(part)
+    for _, c in ipairs(part:GetChildren()) do
+        if c:IsA("WeldConstraint") or c:IsA("ManualWeld") or c:IsA("Motor6D") then
             return true
         end
     end
     return false
 end
 
--- Wait for the item to become unlocked (constraint removed), with timeout (e.g., 3 seconds)
-local function waitForUnlock(item, timeout)
+local function waitForMovable(part, timeout)
     local start = tick()
-    while isLockedByConstraint(item) do
+    while true do
+        if part and part.Parent and not part.Anchored and not hasLockingConstraint(part) then
+            return true
+        end
         if tick() - start > timeout then
-            return false -- Timed out
+            return false
         end
         task.wait(0.05)
     end
-    return true
+end
+
+local function highlightItem(part)
+    if part and part:IsA("BasePart") then
+        local origColor = part.Color
+        local origMat = part.Material
+        part.Color = Color3.new(1, 1, 0)
+        part.Material = Enum.Material.Neon
+        task.delay(0.5, function()
+            if part and part.Parent then
+                part.Color = origColor
+                part.Material = origMat
+            end
+        end)
+    end
 end
 
 BringStuffTab:AddButton({
     Title = "Bring All Selected Items",
-    Description = "Bring all selected items from all categories (handles locked constraints)",
+    Description = "Bring all selected items from all categories (robust handling, no spam notify)",
     Callback = function()
         local root = getRoot()
         if not root then
@@ -1128,45 +1151,71 @@ BringStuffTab:AddButton({
             return
         end
 
-        local count, failed, locked = 0, 0, 0
+        local count, failed, locked, missing, outOfRange = 0, 0, 0, 0, 0
+        local failedList, lockedList, missingList, outOfRangeList, teleportedList = {}, {}, {}, {}, {}
+
         for group, selected in pairs(selectedTeleportItems) do
             for _, wanted in ipairs(selected or {}) do
+                local found = false
                 for _, obj in ipairs(itemsFolder:GetChildren()) do
-                    if obj.Name == wanted and isWithinRange(obj, root, bringRange) then
-                        -- Step 1: Request unlock (pickup) via remote
-                        local unlocked = unlockItem(obj)
-
-                        -- Step 2: Wait for Welds/constraints to be removed by game logic (max 3s)
-                        local unlockedNow = waitForUnlock(obj, 3)
-                        if not unlockedNow then
-                            locked = locked + 1
-                            if Fluent and Fluent.Notify then
-                                Fluent:Notify({Title="Bring Failed", Content=obj.Name.." stayed locked (constraint not released).", Duration=2})
-                            end
-                            continue
+                    if obj.Name == wanted then
+                        found = true
+                        if not isWithinRange(obj, root, bringRange) then
+                            outOfRange = outOfRange + 1
+                            table.insert(outOfRangeList, obj.Name)
+                            break
                         end
 
-                        -- Step 3: Teleport (drag) the item
                         local part = getItemPart(obj)
-                        if part and not part.Anchored then
-                            obj:SetPrimaryPartCFrame(root.CFrame + Vector3.new(math.random(-4, 4), 2, math.random(-4, 4)))
-                            count = count + 1
-                        else
-                            failed = failed + 1
+                        if not part then
+                            missing = missing + 1
+                            table.insert(missingList, obj.Name)
+                            break
                         end
+
+                        unlockItem(obj)
+                        local ok = waitForMovable(part, 3)
+                        if ok then
+                            part.CFrame = root.CFrame + Vector3.new(math.random(-4, 4), 2, math.random(-4, 4))
+                            highlightItem(part)
+                            count = count + 1
+                            table.insert(teleportedList, obj.Name)
+                        else
+                            locked = locked + 1
+                            table.insert(lockedList, obj.Name)
+                        end
+                        break
                     end
+                end
+                if not found then
+                    missing = missing + 1
+                    table.insert(missingList, wanted)
                 end
             end
         end
 
+        -- Compose summary notification - only one notify for the action
+        local summary = ""
+        if count > 0 then
+            summary = summary .. ("Teleported: %d (%s)\n"):format(count, table.concat(teleportedList, ", "))
+        end
+        if outOfRange > 0 then
+            summary = summary .. ("Out of range: %d (%s)\n"):format(outOfRange, table.concat(outOfRangeList, ", "))
+        end
+        if missing > 0 then
+            summary = summary .. ("Missing part: %d (%s)\n"):format(missing, table.concat(missingList, ", "))
+        end
+        if locked > 0 then
+            summary = summary .. ("Locked: %d (%s)\n"):format(locked, table.concat(lockedList, ", "))
+        end
+
+        if summary == "" then summary = "No items processed." end
+
         if Fluent and Fluent.Notify then
             Fluent:Notify({
                 Title = "Teleport Items",
-                Content = string.format(
-                    "Teleported %d item(s), skipped %d (anchored/failed), %d locked (constraint not released)", 
-                    count, failed, locked
-                ),
-                Duration = 5
+                Content = summary,
+                Duration = 6
             })
         end
     end
