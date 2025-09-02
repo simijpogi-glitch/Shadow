@@ -967,9 +967,9 @@ Tabs.AutoBandage:AddToggle("Gluttony_Enabled", {
     end
 })
 -----------------------------------------------------------------
--- ================== Exploit Bring Stuff Tab (IMPROVED) ==================
+-- ========== Bring Stuff Tab (Serial, Smooth, Non-Destructive) ==========
 -----------------------------------------------------------------
--- Bring Items Script with Multi-Select Fluent UI (fixed), improved unlock logic, and fixed bring range
+-- Items brought one by one, with smooth ownership sync, safe constraint handling, and no model destruction.
 
 -- ===================== CONFIGURABLE SECTION DATA =====================
 local itemSections = {
@@ -1023,19 +1023,15 @@ if not BringStuffTab then
     return
 end
 
--- Each section gets its own selected items table to avoid overlap
 local sectionSelections = {}
+local BRING_RANGE = 500 -- Fixed range
 
--- ===================== TELEPORT LOGIC =====================
-
-local BRING_RANGE = 500 -- Fixed bring range, no slider!
-
+-- ===================== HELPERS =====================
 local function getRoot()
     local p = game.Players.LocalPlayer
     return p and p.Character and p.Character:FindFirstChild("HumanoidRootPart")
 end
 
--- Helper to get an item's primary part
 local function getItemPart(obj)
     if obj:IsA("Model") then
         return obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
@@ -1043,43 +1039,80 @@ local function getItemPart(obj)
     return obj
 end
 
--- Checks if an item is within bring range
 local function isWithinRange(obj, root, range)
     local part = getItemPart(obj)
     return part and (part.Position - root.Position).Magnitude <= range
 end
 
--- Improved unlock: attempts to break welds, constraints, and fires pickup remote
-local function improvedUnlockItem(item)
-    -- Try to fire the pickup remote
+local function safeUnanchor(model)
+    -- Only unanchor the PrimaryPart or main part, not all parts
+    if model:IsA("Model") then
+        local part = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
+        if part and part.Anchored then
+            pcall(function() part.Anchored = false end)
+        end
+    elseif model:IsA("BasePart") then
+        if model.Anchored then
+            pcall(function() model.Anchored = false end)
+        end
+    end
+end
+
+local function waitForDragOwnership(item, timeout)
+    local player = game.Players.LocalPlayer
+    local startTime = tick()
+    while tick() - startTime < (timeout or 2) do
+        if item:IsA("Model") and item.PrimaryPart then
+            if item.PrimaryPart:GetNetworkOwner() == player then
+                return true
+            end
+        elseif item:IsA("BasePart") then
+            if item:GetNetworkOwner() == player then
+                return true
+            end
+        end
+        -- Some games use "IsBeingDragged" or "Dragger" properties
+        if item:FindFirstChild("IsBeingDragged") and item.IsBeingDragged.Value == true then
+            return true
+        end
+        if item:FindFirstChild("Dragger") and item.Dragger.Value == player then
+            return true
+        end
+        task.wait(0.05)
+    end
+    return false
+end
+
+local function smoothUnlockItem(item)
+    -- Fire pickup remote (do not destroy welds, just let the game handle it)
     local pickupRemote = game:GetService("ReplicatedStorage"):FindFirstChild("RemoteEvents")
         and game:GetService("ReplicatedStorage").RemoteEvents:FindFirstChild("RequestStartDraggingItem")
     if pickupRemote then
         pickupRemote:FireServer(item)
     end
 
-    -- Try to break Welds and Constraints on the item
-    local part = getItemPart(item)
-    if part then
-        -- Remove Welds and Constraints from all descendants
-        for _, desc in ipairs(item:GetDescendants()) do
-            if desc:IsA("Weld") or desc:IsA("WeldConstraint") or desc:IsA("ManualWeld")
-                or desc:IsA("RodConstraint") or desc:IsA("HingeConstraint")
-                or desc:IsA("SpringConstraint") or desc:IsA("BallSocketConstraint") then
-                pcall(function() desc:Destroy() end)
-            end
-        end
-        -- Also unanchor the part if possible (optional, depending on game logic)
-        if part.Anchored then
-            pcall(function() part.Anchored = false end)
-        end
-    end
-    -- Wait a short moment for the pickup to process and constraints to break
-    task.wait(0.15)
+    -- Wait for network ownership or IsBeingDragged, do NOT destroy any internal welds!
+    -- Only unanchor the main part if needed, but leave constraints/welds alone to avoid model destruction.
+    safeUnanchor(item)
+
+    -- Wait for our ownership before moving
+    waitForDragOwnership(item, 1.5)
 end
 
--- Actual bring logic per section
-local function bringSelectedItems(selectedItems)
+local function fullyPickupAndBringItemSmooth(item, rootCFrame)
+    smoothUnlockItem(item)
+    -- Now, if we own it, gently move it
+    if item:IsA("Model") and item.PrimaryPart and not item.PrimaryPart.Anchored then
+        item:SetPrimaryPartCFrame(rootCFrame + Vector3.new(math.random(-4,4), 2, math.random(-4,4)))
+        return true
+    elseif item:IsA("BasePart") and not item.Anchored then
+        item.CFrame = rootCFrame + Vector3.new(math.random(-4,4), 2, math.random(-4,4))
+        return true
+    end
+    return false
+end
+
+local function bringSelectedItemsSerialSmooth(selectedItems)
     local root = getRoot()
     if not root then
         if Fluent and Fluent.Notify then
@@ -1105,22 +1138,17 @@ local function bringSelectedItems(selectedItems)
     local count, failed = 0, 0
 
     for _, wanted in ipairs(selectedItems) do
+        -- Find all items matching the name within range, do one at a time with wait
         for _, obj in ipairs(itemsFolder:GetChildren()) do
             if obj.Name == wanted and isWithinRange(obj, root, BRING_RANGE) then
-                improvedUnlockItem(obj)
-
-                -- Try to teleport if not anchored/constrained
-                local part = getItemPart(obj)
-                if part and not part.Anchored then
-                    if obj:IsA("Model") and obj.PrimaryPart then
-                        obj:SetPrimaryPartCFrame(root.CFrame + Vector3.new(math.random(-4,4), 2, math.random(-4,4)))
-                    elseif part then
-                        part.CFrame = root.CFrame + Vector3.new(math.random(-4,4), 2, math.random(-4,4))
-                    end
+                local success = fullyPickupAndBringItemSmooth(obj, root.CFrame)
+                if success then
                     count = count + 1
                 else
                     failed = failed + 1
                 end
+                -- Wait a bit between each bring for maximum smoothness and server sync
+                task.wait(0.5)
             end
         end
     end
@@ -1135,20 +1163,17 @@ local function bringSelectedItems(selectedItems)
 end
 
 -- ===================== UI GENERATION LOOP =====================
-
 for secIdx, section in ipairs(itemSections) do
     BringStuffTab:AddSection(section.Name)
     local sectionKey = "section_" .. section.Name
     sectionSelections[sectionKey] = {}
 
-    -- Multi-select dropdown (Fluent UI fix: use .Values and .Multi, and custom selection table)
     BringStuffTab:AddDropdown("Dropdown_"..sectionKey, {
         Title = section.DropdownTitle,
         Values = section.Items,
         Multi = true,
         Default = {},
         Callback = function(selected)
-            -- Protect selection array from reference bugs
             sectionSelections[sectionKey] = {}
             for _, v in ipairs(selected) do
                 table.insert(sectionSelections[sectionKey], v)
@@ -1167,7 +1192,6 @@ for secIdx, section in ipairs(itemSections) do
             for _, item in ipairs(section.Items) do
                 table.insert(sectionSelections[sectionKey], item)
             end
-            -- Set dropdown UI values if possible (if your UI supports .SetValue)
             if Options and Options["Dropdown_"..sectionKey] and Options["Dropdown_"..sectionKey].SetValue then
                 Options["Dropdown_"..sectionKey]:SetValue(sectionSelections[sectionKey])
             end
@@ -1193,9 +1217,9 @@ for secIdx, section in ipairs(itemSections) do
 
     BringStuffTab:AddButton({
         Title = "Bring Selected "..section.DropdownTitle,
-        Description = "Bring all selected items from this section",
+        Description = "Bring all selected items from this section (smooth, one by one)",
         Callback = function()
-            bringSelectedItems(sectionSelections[sectionKey])
+            bringSelectedItemsSerialSmooth(sectionSelections[sectionKey])
         end
     })
 end
